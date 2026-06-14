@@ -1,0 +1,92 @@
+# generated: 2026-06-14T00:00:00Z
+# last_updated: 2026-06-14T00:00:00Z
+# project: farm-tracking
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: _bmad-output/implementation-artifacts
+#
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - Developer typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-06-14T00:00:00Z
+last_updated: 2026-06-14T23:30:00Z
+project: farm-tracking
+project_key: NOKEY
+tracking_system: file-system
+story_location: _bmad-output/implementation-artifacts
+
+development_status:
+  # Epic 1: Foundation & Authenticated Access
+  epic-1: in-progress
+  1-1-project-scaffold-brand-foundation: review
+  1-2-aws-infrastructure-cicd-pipeline: review
+  1-3-database-schema-email-password-authentication: backlog
+  1-4-role-based-navigation-shells-route-protection: backlog
+  1-5-password-reset-session-idle-timeout: backlog
+  epic-1-retrospective: optional
+
+  # Epic 2: Platform Administration
+  epic-2: backlog
+  2-1-farm-management-platform-overview: backlog
+  2-2-farmer-account-creation-farm-assignment: backlog
+  2-3-vet-account-creation-farm-assignments: backlog
+  2-4-api-key-management: backlog
+  epic-2-retrospective: optional
+
+  # Epic 3: Cattle Management
+  epic-3: backlog
+  3-1-add-cattle-to-farm: backlog
+  3-2-cattle-list-with-health-status: backlog
+  3-3-cattle-profile: backlog
+  epic-3-retrospective: optional
+
+  # Epic 4: Scan Ingestion API
+  epic-4: backlog
+  4-1-scan-ingestion-endpoint-openapi-spec: backlog
+  4-2-rate-limiting-api-robustness: backlog
+  epic-4-retrospective: optional
+
+  # Epic 5: Scan Review, Annotation & Health Reports
+  epic-5: backlog
+  5-1-vet-scan-queue: backlog
+  5-2-scan-viewer: backlog
+  5-3-annotation-canvas: backlog
+  5-4-annotation-save-image-export: backlog
+  5-5-health-report-creation: backlog
+  5-6-post-submission-vet-report-read-access: backlog
+  5-7-health-report-view-farmer: backlog
+  epic-5-retrospective: optional
+
+  # Epic 6: Farmer Dashboard & Notifications
+  epic-6: backlog
+  6-1-farmer-dashboard: backlog
+  6-2-farmer-health-report-alerts-email-background-job: backlog
+  6-3-in-app-notification-bell-panel: backlog
+  6-4-vet-morning-digest: backlog
+  epic-6-retrospective: optional

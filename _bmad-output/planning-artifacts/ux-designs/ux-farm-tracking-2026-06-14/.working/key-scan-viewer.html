@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Farm Tracking — Scan Viewer & Annotation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #ECEAE6;
+    padding: 32px 24px 48px;
+    min-height: 100vh;
+  }
+
+  /* ── Page labels ── */
+  .page-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6B6B6B;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+
+  .states-wrapper {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  .state-block {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Browser chrome shell ── */
+  .browser-shell {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.10);
+    background: #FAFAF8;
+    width: 100%;
+    max-width: 1040px;
+  }
+
+  .browser-chrome {
+    background: #F0EFED;
+    border-bottom: 1px solid #D4D2CE;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .browser-dots {
+    display: flex; gap: 6px;
+  }
+  .browser-dots span {
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .dot-red   { background: #FF5F57; }
+  .dot-yel   { background: #FFBD2E; }
+  .dot-grn   { background: #28CA41; }
+
+  .browser-url {
+    flex: 1;
+    background: #FFFFFF;
+    border: 1px solid #D4D2CE;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #6B6B6B;
+    padding: 4px 10px;
+    letter-spacing: 0.01em;
+  }
+
+  /* ── App shell ── */
+  .app-shell {
+    display: flex;
+    min-height: 700px;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: #1E3A5F;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+  }
+
+  .sidebar-farm-switcher {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+  }
+
+  .farm-switcher-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 6px;
+  }
+
+  .farm-switcher-dropdown {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.10);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    padding: 7px 10px;
+    cursor: pointer;
+  }
+  .farm-switcher-dropdown span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #FFFFFF;
+  }
+  .farm-switcher-dropdown svg {
+    opacity: 0.6;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 12px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.65);
+    cursor: pointer;
+    transition: background 0.15s;
+    text-decoration: none;
+  }
+  .nav-item:hover {
+    background: rgba(255,255,255,0.08);
+    color: #FFFFFF;
+  }
+  .nav-item.active {
+    background: rgba(255,255,255,0.14);
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+  .nav-icon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.85;
+    flex-shrink: 0;
+  }
+
+  .sidebar-footer {
+    padding: 12px 14px;
+    border-top: 1px solid rgba(255,255,255,0.10);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #D97706 0%, #B45309 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+  }
+  .sidebar-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .sidebar-user-name {
+    font-size: 12px;
+    font-weight: 600;
+    color: #FFFFFF;
+  }
+  .sidebar-user-role {
+    font-size: 10px;
+    color: rgba(255,255,255,0.5);
+  }
+
+  /* ── Main content area ── */
+  .main-content {
+    flex: 1;
+    display: flex;
+    background: #FAFAF8;
+    overflow: hidden;
+  }
+
+  /* ── Left Panel (Scan Viewer) ── */
+  .scan-panel {
+    width: 55%;
+    border-right: 1px solid #E2E1DF;
+    display: flex;
+    flex-direction: column;
+    background: #FAFAF8;
+    overflow: hidden;
+  }
+
+  .panel-header {
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid #E2E1DF;
+    background: #FFFFFF;
+    flex-shrink: 0;
+  }
+
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1E3A5F;
+    letter-spacing: -0.01em;
+  }
+
+  .panel-subtitle {
+    font-size: 11px;
+    color: #6B6B6B;
+    margin-top: 3px;
+  }
+
+  .scan-area-wrapper {
+    padding: 16px 18px 12px;
+    flex-shrink: 0;
+    background: #FAFAF8;
+  }
+
+  /* ── Thermal scan ── */
+  .thermal-scan-container {
+    position: relative;
+    width: 100%;
+    height: 300px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #0d0d0d;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.28);
+  }
+
+  /* Base dark scene */
+  .thermal-base {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 110px 90px at 62% 52%, rgba(255,255,255,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 200px 160px at 55% 55%, #1a0800 0%, transparent 80%),
+      #0a0a0a;
+  }
+
+  /* Body silhouette — warm cool baseline */
+  .thermal-body {
+    position: absolute;
+    left: 18%;
+    top: 10%;
+    width: 65%;
+    height: 78%;
+    border-radius: 40% 45% 38% 42% / 35% 40% 45% 40%;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 50%, #7B2D00 0%, #3D1200 60%, transparent 100%);
+    opacity: 0.95;
+  }
+
+  /* Primary hotspot — upper left area of body (shoulder) */
+  .thermal-hotspot-1 {
+    position: absolute;
+    left: 20%;
+    top: 18%;
+    width: 34%;
+    height: 44%;
+    background:
+      radial-gradient(ellipse 55% 65% at 50% 45%,
+        #FFFFFF 0%,
+        #FFD700 8%,
+        #FF6600 22%,
+        #CC2200 40%,
+        #8B0000 60%,
+        transparent 80%
+      );
+    opacity: 0.92;
+  }
+
+  /* Secondary warm area */
+  .thermal-hotspot-2 {
+    position: absolute;
+    left: 48%;
+    top: 30%;
+    width: 22%;
+    height: 28%;
+    background:
+      radial-gradient(ellipse 70% 70% at 50% 50%,
+        #FF8800 0%,
+        #CC4400 35%,
+        #8B1A00 65%,
+        transparent 90%
+      );
+    opacity: 0.78;
+  }
+
+  /* Cool extremities / legs */
+  .thermal-cool-1 {
+    position: absolute;
+    left: 22%;
+    top: 70%;
+    width: 10%;
+    height: 22%;
+    background: radial-gradient(ellipse at 50% 30%, #1A3A6B 0%, #0A1A30 60%, transparent 100%);
+    opacity: 0.85;
+    border-radius: 30%;
+  }
+  .thermal-cool-2 {
+    position: absolute;
+    left: 36%;
+    top: 72%;
+    width: 9%;
+    height: 20%;
+    background: radial-gradient(ellipse at 50% 30%, #1A3A6B 0%, #0A1A30 60%, transparent 100%);
+    opacity: 0.85;
+    border-radius: 30%;
+  }
+  .thermal-cool-3 {
+    position: absolute;
+    left: 52%;
+    top: 70%;
+    width: 9%;
+    height: 22%;
+    background: radial-gradient(ellipse at 50% 30%, #1A3A6B 0%, #0A1A30 60%, transparent 100%);
+    opacity: 0.85;
+    border-radius: 30%;
+  }
+  .thermal-cool-4 {
+    position: absolute;
+    left: 65%;
+    top: 72%;
+    width: 9%;
+    height: 20%;
+    background: radial-gradient(ellipse at 50% 30%, #1A3A6B 0%, #0A1A30 60%, transparent 100%);
+    opacity: 0.85;
+    border-radius: 30%;
+  }
+
+  /* Head area */
+  .thermal-head {
+    position: absolute;
+    left: 69%;
+    top: 14%;
+    width: 18%;
+    height: 30%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 50%, #FF5500 0%, #AA2200 45%, #5A0E00 80%, transparent 100%);
+    opacity: 0.80;
+  }
+
+  /* Temperature color scale bar */
+  .thermal-scale {
+    position: absolute;
+    right: 10px;
+    top: 16px;
+    bottom: 16px;
+    width: 14px;
+    border-radius: 4px;
+    background: linear-gradient(
+      to bottom,
+      #FFFFFF 0%,
+      #FFD700 12%,
+      #FF6600 28%,
+      #CC2200 44%,
+      #8B0000 60%,
+      #1A006B 76%,
+      #060626 100%
+    );
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  }
+
+  .thermal-scale-label-hi {
+    position: absolute;
+    right: 28px;
+    top: 12px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.65);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+  .thermal-scale-label-lo {
+    position: absolute;
+    right: 28px;
+    bottom: 12px;
+    font-size: 9px;
+    color: rgba(255,255,255,0.65);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  /* Crosshair / temperature readings overlay */
+  .thermal-reading {
+    position: absolute;
+    font-size: 9px;
+    color: #FFFFFF;
+    font-weight: 700;
+    background: rgba(0,0,0,0.55);
+    padding: 2px 4px;
+    border-radius: 3px;
+    letter-spacing: 0.03em;
+  }
+  .reading-hot { left: 22%; top: 20%; }
+  .reading-warm { left: 50%; top: 32%; }
+
+  /* ── Annotation circles ── */
+  .annotation-circle {
+    position: absolute;
+    border: 2px solid #D97706;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 0 1px rgba(217,119,6,0.25);
+  }
+  .annotation-circle.primary {
+    left: 16%;
+    top: 14%;
+    width: 37%;
+    height: 46%;
+  }
+  .annotation-circle.secondary {
+    left: 46%;
+    top: 26%;
+    width: 22%;
+    height: 30%;
+  }
+
+  /* Annotation number badges */
+  .annotation-badge {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #D97706;
+    color: #FFFFFF;
+    font-size: 9px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    top: -8px;
+    right: -8px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  }
+
+  /* ── Annotation toolbar ── */
+  .annotation-toolbar {
+    position: absolute;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(30,58,95,0.92);
+    backdrop-filter: blur(4px);
+    border-radius: 8px;
+    padding: 7px 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.35);
+    white-space: nowrap;
+  }
+
+  .tool-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 9px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    transition: background 0.12s;
+    border: 1px solid transparent;
+  }
+  .tool-btn:hover {
+    background: rgba(255,255,255,0.10);
+    color: #FFFFFF;
+  }
+  .tool-btn.active {
+    background: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.25);
+    color: #FFFFFF;
+    font-weight: 600;
+  }
+
+  .tool-divider {
+    width: 1px;
+    height: 20px;
+    background: rgba(255,255,255,0.18);
+    margin: 0 2px;
+  }
+
+  /* ── History section ── */
+  .history-section {
+    padding: 0 18px 16px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  .history-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6B6B6B;
+    margin-bottom: 8px;
+  }
+
+  .history-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px;
+    background: #FFFFFF;
+    border: 1px solid #E2E1DF;
+    border-radius: 6px;
+    margin-bottom: 6px;
+  }
+
+  .history-date {
+    font-size: 11px;
+    color: #6B6B6B;
+    flex-shrink: 0;
+    margin-right: 8px;
+  }
+
+  .history-info {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .history-status {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1E3A5F;
+  }
+
+  .history-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 9999px;
+  }
+  .badge-healthy {
+    background: #DCFCE7;
+    color: #15803D;
+  }
+  .badge-mastitis {
+    background: #FEF3C7;
+    color: #B45309;
+  }
+  .badge-recovered {
+    background: #E0F2FE;
+    color: #0369A1;
+  }
+
+  .history-vet {
+    font-size: 10px;
+    color: #6B6B6B;
+    flex-shrink: 0;
+  }
+
+  /* ── Right Panel (Form) ── */
+  .report-panel {
+    width: 45%;
+    display: flex;
+    flex-direction: column;
+    background: #FAFAF8;
+    overflow-y: auto;
+  }
+
+  .report-header {
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid #E2E1DF;
+    background: #FFFFFF;
+    flex-shrink: 0;
+  }
+
+  .report-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1E3A5F;
+    letter-spacing: -0.01em;
+    margin-bottom: 3px;
+  }
+
+  .report-cattle-recap {
+    font-size: 11px;
+    color: #6B6B6B;
+  }
+
+  .report-body {
+    padding: 16px 18px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Form field */
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .field-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #1E3A5F;
+  }
+  .field-label .required {
+    color: #DC2626;
+    margin-left: 2px;
+  }
+
+  .form-input {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    font-family: system-ui, sans-serif;
+    color: #1A1A1A;
+    background: #FFFFFF;
+    border: 1px solid #E2E1DF;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .form-input:focus {
+    border-color: #1E3A5F;
+    box-shadow: 0 0 0 2px rgba(30,58,95,0.10);
+  }
+  .form-input::placeholder {
+    color: #BDBCBA;
+  }
+  .form-input.filled {
+    border-color: #C8C7C5;
+  }
+
+  .form-textarea {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 12px;
+    font-family: system-ui, sans-serif;
+    color: #1A1A1A;
+    background: #FFFFFF;
+    border: 1px solid #E2E1DF;
+    border-radius: 8px;
+    outline: none;
+    resize: none;
+    line-height: 1.55;
+    min-height: 72px;
+  }
+  .form-textarea.filled {
+    border-color: #C8C7C5;
+  }
+
+  /* Segmented control — Severity */
+  .segmented-control {
+    display: flex;
+    background: #F1F0EE;
+    border: 1px solid #E2E1DF;
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .seg-option {
+    flex: 1;
+    text-align: center;
+    padding: 6px 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6B6B6B;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .seg-option.selected {
+    background: #1E3A5F;
+    color: #FFFFFF;
+    font-weight: 600;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18);
+  }
+
+  /* Recovery status toggle */
+  .recovery-toggle {
+    display: flex;
+    background: #F1F0EE;
+    border: 1px solid #E2E1DF;
+    border-radius: 8px;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .recovery-option {
+    flex: 1;
+    text-align: center;
+    padding: 7px 4px;
+    font-size: 12px;
+    font-weight: 500;
+    color: #6B6B6B;
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .recovery-option.selected-sick {
+    background: #FEF3C7;
+    color: #B45309;
+    font-weight: 700;
+    border: 1px solid #FDE68A;
+  }
+  .recovery-option.selected-recovered {
+    background: #DCFCE7;
+    color: #15803D;
+    font-weight: 700;
+    border: 1px solid #BBF7D0;
+  }
+
+  /* Submit button */
+  .submit-btn {
+    width: 100%;
+    padding: 11px;
+    background: #1E3A5F;
+    color: #FFFFFF;
+    font-size: 13px;
+    font-weight: 700;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    box-shadow: 0 2px 6px rgba(30,58,95,0.30);
+    transition: background 0.15s;
+  }
+  .submit-btn:hover {
+    background: #163055;
+  }
+  .submit-btn.disabled {
+    background: #D4D2CE;
+    color: #A0A09E;
+    cursor: not-allowed;
+    box-shadow: none;
+  }
+
+  .form-note {
+    font-size: 10px;
+    color: #6B6B6B;
+    text-align: center;
+    margin-top: -6px;
+  }
+
+  /* ── Annotation count chip ── */
+  .annotation-count-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #FEF3C7;
+    border: 1px solid #FDE68A;
+    border-radius: 9999px;
+    padding: 3px 9px;
+    font-size: 10px;
+    font-weight: 600;
+    color: #B45309;
+    margin-top: 6px;
+  }
+
+  /* ── Empty / no-annotation state ── */
+  .empty-note {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .empty-note-text {
+    font-size: 11px;
+    color: rgba(255,255,255,0.35);
+    font-weight: 500;
+    line-height: 1.5;
+  }
+  .empty-note-icon {
+    font-size: 26px;
+    margin-bottom: 6px;
+    opacity: 0.3;
+  }
+
+  /* ── State pill indicators ── */
+  .state-pill-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .state-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 9999px;
+  }
+  .pill-filled {
+    background: #1E3A5F;
+    color: #FFFFFF;
+  }
+  .pill-empty {
+    background: #E2E1DF;
+    color: #6B6B6B;
+  }
+  .pill-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+  .pill-dot-filled { background: #D97706; }
+  .pill-dot-empty  { background: #BDBCBA; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     STATES WRAPPER
+═══════════════════════════════════════════ -->
+<div class="states-wrapper">
+
+  <!-- ═══ STATE 1: Annotated + Form Filled ═══ -->
+  <div class="state-block">
+    <div class="state-pill-wrapper">
+      <div class="state-pill pill-filled">
+        <span class="pill-dot pill-dot-filled"></span>
+        State 1 — Annotated &amp; Form Filled
+      </div>
+    </div>
+
+    <div class="browser-shell">
+      <!-- Browser chrome -->
+      <div class="browser-chrome">
+        <div class="browser-dots">
+          <span class="dot-red"></span>
+          <span class="dot-yel"></span>
+          <span class="dot-grn"></span>
+        </div>
+        <div class="browser-url">farmtracking.internal/scan-queue/bella-tag-0042</div>
+      </div>
+
+      <!-- App shell -->
+      <div class="app-shell">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+          <div class="sidebar-farm-switcher">
+            <div class="farm-switcher-label">Active Farm</div>
+            <div class="farm-switcher-dropdown">
+              <span>Mehmet's Farm</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <nav class="sidebar-nav">
+            <!-- Farms -->
+            <a class="nav-item" href="#">
+              <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+                <path d="M1 6.5L8 1.5L15 6.5V14.5H10.5V10H5.5V14.5H1V6.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+              </svg>
+              Farms
+            </a>
+            <!-- Scan Queue — ACTIVE -->
+            <a class="nav-item active" href="#">
+              <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+                <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M4.5 6H11.5M4.5 9H9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                <circle cx="12" cy="4.5" r="2" fill="#D97706"/>
+              </svg>
+              Scan Queue
+            </a>
+            <!-- Reports -->
+            <a class="nav-item" href="#">
+              <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+                <path d="M3 2H10L13 5V14H3V2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                <path d="M10 2V5H13" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                <path d="M5.5 8H10.5M5.5 10.5H8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              Reports
+            </a>
+          </nav>
+
+          <div class="sidebar-footer">
+            <div class="avatar">DA</div>
+            <div class="sidebar-user-info">
+              <div class="sidebar-user-name">Dr. Ayşe</div>
+              <div class="sidebar-user-role">Veterinarian</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+
+          <!-- LEFT: Scan Panel -->
+          <div class="scan-panel">
+            <div class="panel-header">
+              <div class="panel-title">Bella / #TAG-0042</div>
+              <div class="panel-subtitle">Submitted June 12, 2026 &nbsp;·&nbsp; IoT Device #3</div>
+              <div class="annotation-count-chip">
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <circle cx="5" cy="5" r="4" stroke="#B45309" stroke-width="1.3"/>
+                </svg>
+                2 annotations drawn
+              </div>
+            </div>
+
+            <div class="scan-area-wrapper">
+              <!-- Thermal scan -->
+              <div class="thermal-scan-container">
+                <!-- Thermal layers -->
+                <div class="thermal-base"></div>
+                <div class="thermal-body"></div>
+                <div class="thermal-hotspot-1"></div>
+                <div class="thermal-hotspot-2"></div>
+                <div class="thermal-cool-1"></div>
+                <div class="thermal-cool-2"></div>
+                <div class="thermal-cool-3"></div>
+                <div class="thermal-cool-4"></div>
+                <div class="thermal-head"></div>
+
+                <!-- Temperature readings -->
+                <div class="thermal-reading reading-hot">39.4°C</div>
+                <div class="thermal-reading reading-warm">38.1°C</div>
+
+                <!-- Scale bar -->
+                <div class="thermal-scale"></div>
+                <div class="thermal-scale-label-hi">42°</div>
+                <div class="thermal-scale-label-lo">30°</div>
+
+                <!-- Annotation circles -->
+                <div class="annotation-circle primary">
+                  <div class="annotation-badge">1</div>
+                </div>
+                <div class="annotation-circle secondary">
+                  <div class="annotation-badge">2</div>
+                </div>
+
+                <!-- Annotation toolbar -->
+                <div class="annotation-toolbar">
+                  <div class="tool-btn active">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <circle cx="6.5" cy="6.5" r="5.25" stroke="currentColor" stroke-width="1.4"/>
+                    </svg>
+                    Circle
+                  </div>
+                  <div class="tool-btn">
+                    <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+                      <ellipse cx="7" cy="5.5" rx="6" ry="4.25" stroke="currentColor" stroke-width="1.4"/>
+                    </svg>
+                    Ellipse
+                  </div>
+                  <div class="tool-divider"></div>
+                  <div class="tool-btn">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M2 4L6.5 1.5L11 4V9L6.5 11.5L2 9V4Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                      <path d="M6.5 1.5V11.5M2 4L11 9M11 4L2 9" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+                    </svg>
+                    Undo
+                  </div>
+                  <div class="tool-btn">
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                      <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    Clear
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- History section -->
+            <div class="history-section">
+              <div class="history-label">Previous Health History</div>
+
+              <div class="history-row">
+                <span class="history-date">May 3, 2026</span>
+                <div class="history-info">
+                  <span class="history-status">Healthy</span>
+                  <span class="history-badge badge-healthy">Healthy</span>
+                </div>
+                <span class="history-vet">Dr. Ayşe</span>
+              </div>
+
+              <div class="history-row">
+                <span class="history-date">Apr 15, 2026</span>
+                <div class="history-info">
+                  <span class="history-status">Mastitis</span>
+                  <span class="history-badge badge-mastitis">Moderate</span>
+                  <span class="history-badge badge-recovered">Recovered</span>
+                </div>
+                <span class="history-vet">Dr. Ayşe</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Report Panel -->
+          <div class="report-panel">
+            <div class="report-header">
+              <div class="report-title">Create Health Report</div>
+              <div class="report-cattle-recap">Bella &nbsp;·&nbsp; #TAG-0042 &nbsp;·&nbsp; Holstein &nbsp;·&nbsp; Born Mar 2022</div>
+            </div>
+
+            <div class="report-body">
+
+              <!-- Sickness Name -->
+              <div class="field-group">
+                <label class="field-label">Sickness Name <span class="required">*</span></label>
+                <input class="form-input filled" type="text" value="Mastitis" readonly />
+              </div>
+
+              <!-- Severity -->
+              <div class="field-group">
+                <label class="field-label">Severity <span class="required">*</span></label>
+                <div class="segmented-control">
+                  <div class="seg-option">Mild</div>
+                  <div class="seg-option selected">Moderate ✓</div>
+                  <div class="seg-option">Severe</div>
+                </div>
+              </div>
+
+              <!-- Treatment -->
+              <div class="field-group">
+                <label class="field-label">Recommended Treatment</label>
+                <textarea class="form-textarea filled" readonly>Antibiotic course — Penicillin G, 5-day course. Monitor milk output.</textarea>
+              </div>
+
+              <!-- Recovery Status -->
+              <div class="field-group">
+                <label class="field-label">Recovery Status <span class="required">*</span></label>
+                <div class="recovery-toggle">
+                  <div class="recovery-option selected-sick">Sick ✓</div>
+                  <div class="recovery-option">Recovered</div>
+                </div>
+              </div>
+
+              <!-- Submit -->
+              <button class="submit-btn">Submit Report</button>
+              <div class="form-note">Reports cannot be edited after submission.</div>
+
+            </div>
+          </div>
+
+        </div><!-- /main-content -->
+      </div><!-- /app-shell -->
+    </div><!-- /browser-shell -->
+  </div><!-- /state-block 1 -->
+
+
+  <!-- ═══ STATE 2: No Annotation + Empty Form ═══ -->
+  <div class="state-block">
+    <div class="state-pill-wrapper">
+      <div class="state-pill pill-empty">
+        <span class="pill-dot pill-dot-empty"></span>
+        State 2 — No Annotation &amp; Empty Form
+      </div>
+    </div>
+
+    <div class="browser-shell">
+      <!-- Browser chrome -->
+      <div class="browser-chrome">
+        <div class="browser-dots">
+          <span class="dot-red"></span>
+          <span class="dot-yel"></span>
+          <span class="dot-grn"></span>
+        </div>
+        <div class="browser-url">farmtracking.internal/scan-queue/bella-tag-0042</div>
+      </div>
+
+      <!-- App shell -->
+      <div class="app-shell">
+
+        <!-- SIDEBAR -->
+        <div class="sidebar">
+          <div class="sidebar-farm-switcher">
+            <div class="farm-switcher-label">Active Farm</div>
+            <div class="farm-switcher-dropdown">
+              <span>Mehmet's Farm</span>
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+          </div>
+
+          <nav class="sidebar-nav">
+            <a class="nav-item" href="#">
+              <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+                <path d="M1 6.5L8 1.5L15 6.5V14.5H10.5V10H5.5V14.5H1V6.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+              </svg>
+              Farms
+            </a>
+            <a class="nav-item active" href="#">
+              <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+                <rect x="1.5" y="2.5" width="13" height="11" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M4.5 6H11.5M4.5 9H9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                <circle cx="12" cy="4.5" r="2" fill="#D97706"/>
+              </svg>
+              Scan Queue
+            </a>
+            <a class="nav-item" href="#">
+              <svg class="nav-icon" viewBox="0 0 16 16" fill="none">
+                <path d="M3 2H10L13 5V14H3V2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                <path d="M10 2V5H13" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                <path d="M5.5 8H10.5M5.5 10.5H8.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+              Reports
+            </a>
+          </nav>
+
+          <div class="sidebar-footer">
+            <div class="avatar">DA</div>
+            <div class="sidebar-user-info">
+              <div class="sidebar-user-name">Dr. Ayşe</div>
+              <div class="sidebar-user-role">Veterinarian</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="main-content">
+
+          <!-- LEFT: Scan Panel — no annotations -->
+          <div class="scan-panel">
+            <div class="panel-header">
+              <div class="panel-title">Bella / #TAG-0042</div>
+              <div class="panel-subtitle">Submitted June 12, 2026 &nbsp;·&nbsp; IoT Device #3</div>
+              <div style="margin-top:6px; font-size:10px; color:#6B6B6B; font-style:italic;">Draw on the scan to add annotations before creating a report.</div>
+            </div>
+
+            <div class="scan-area-wrapper">
+              <!-- Thermal scan — no circles -->
+              <div class="thermal-scan-container">
+                <div class="thermal-base"></div>
+                <div class="thermal-body"></div>
+                <div class="thermal-hotspot-1"></div>
+                <div class="thermal-hotspot-2"></div>
+                <div class="thermal-cool-1"></div>
+                <div class="thermal-cool-2"></div>
+                <div class="thermal-cool-3"></div>
+                <div class="thermal-cool-4"></div>
+                <div class="thermal-head"></div>
+
+                <div class="thermal-reading reading-hot">39.4°C</div>
+                <div class="thermal-reading reading-warm">38.1°C</div>
+
+                <div class="thermal-scale"></div>
+                <div class="thermal-scale-label-hi">42°</div>
+                <div class="thermal-scale-label-lo">30°</div>
+
+                <!-- Empty state nudge -->
+                <div class="empty-note">
+                  <div class="empty-note-icon">○</div>
+                  <div class="empty-note-text">No annotations yet<br/>Select a tool and draw</div>
+                </div>
+
+                <!-- Annotation toolbar -->
+                <div class="annotation-toolbar">
+                  <div class="tool-btn active">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <circle cx="6.5" cy="6.5" r="5.25" stroke="currentColor" stroke-width="1.4"/>
+                    </svg>
+                    Circle
+                  </div>
+                  <div class="tool-btn">
+                    <svg width="14" height="11" viewBox="0 0 14 11" fill="none">
+                      <ellipse cx="7" cy="5.5" rx="6" ry="4.25" stroke="currentColor" stroke-width="1.4"/>
+                    </svg>
+                    Ellipse
+                  </div>
+                  <div class="tool-divider"></div>
+                  <div class="tool-btn" style="opacity:0.35; pointer-events:none;">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+                      <path d="M2 4L6.5 1.5L11 4V9L6.5 11.5L2 9V4Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+                    </svg>
+                    Undo
+                  </div>
+                  <div class="tool-btn" style="opacity:0.35; pointer-events:none;">
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                      <path d="M1.5 1.5L9.5 9.5M9.5 1.5L1.5 9.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    Clear
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- History section -->
+            <div class="history-section">
+              <div class="history-label">Previous Health History</div>
+
+              <div class="history-row">
+                <span class="history-date">May 3, 2026</span>
+                <div class="history-info">
+                  <span class="history-status">Healthy</span>
+                  <span class="history-badge badge-healthy">Healthy</span>
+                </div>
+                <span class="history-vet">Dr. Ayşe</span>
+              </div>
+
+              <div class="history-row">
+                <span class="history-date">Apr 15, 2026</span>
+                <div class="history-info">
+                  <span class="history-status">Mastitis</span>
+                  <span class="history-badge badge-mastitis">Moderate</span>
+                  <span class="history-badge badge-recovered">Recovered</span>
+                </div>
+                <span class="history-vet">Dr. Ayşe</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Report Panel — empty form -->
+          <div class="report-panel">
+            <div class="report-header">
+              <div class="report-title">Create Health Report</div>
+              <div class="report-cattle-recap">Bella &nbsp;·&nbsp; #TAG-0042 &nbsp;·&nbsp; Holstein &nbsp;·&nbsp; Born Mar 2022</div>
+            </div>
+
+            <div class="report-body">
+
+              <!-- Sickness Name — empty -->
+              <div class="field-group">
+                <label class="field-label">Sickness Name <span class="required">*</span></label>
+                <input class="form-input" type="text" placeholder="e.g. Mastitis, Foot rot…" readonly />
+              </div>
+
+              <!-- Severity — nothing selected -->
+              <div class="field-group">
+                <label class="field-label">Severity <span class="required">*</span></label>
+                <div class="segmented-control">
+                  <div class="seg-option">Mild</div>
+                  <div class="seg-option">Moderate</div>
+                  <div class="seg-option">Severe</div>
+                </div>
+              </div>
+
+              <!-- Treatment — empty -->
+              <div class="field-group">
+                <label class="field-label">Recommended Treatment</label>
+                <textarea class="form-textarea" placeholder="Describe the treatment plan…" readonly></textarea>
+              </div>
+
+              <!-- Recovery Status — nothing selected -->
+              <div class="field-group">
+                <label class="field-label">Recovery Status <span class="required">*</span></label>
+                <div class="recovery-toggle">
+                  <div class="recovery-option">Sick</div>
+                  <div class="recovery-option">Recovered</div>
+                </div>
+              </div>
+
+              <!-- Submit — disabled -->
+              <button class="submit-btn disabled" disabled>Submit Report</button>
+              <div class="form-note">Reports cannot be edited after submission.</div>
+
+            </div>
+          </div>
+
+        </div><!-- /main-content -->
+      </div><!-- /app-shell -->
+    </div><!-- /browser-shell -->
+  </div><!-- /state-block 2 -->
+
+</div><!-- /states-wrapper -->
+
+</body>
+</html>

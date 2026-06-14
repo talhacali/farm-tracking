@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farm Tracking — Cattle List</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design Tokens ── */
+    :root {
+      --primary:        #1E3A5F;
+      --primary-fg:     #FFFFFF;
+      --accent:         #D97706;
+      --accent-fg:      #1A0E00;
+      --background:     #FAFAF8;
+      --card:           #FFFFFF;
+      --muted:          #F1F0EE;
+      --muted-fg:       #6B6B6B;
+      --border:         #E2E1DF;
+      --radius-sm:      4px;
+      --radius-md:      8px;
+      --radius-lg:      12px;
+      --radius-full:    9999px;
+      --font:           system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      --font-mono:      ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--background);
+      color: #1A1A1A;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 16px 64px;
+      gap: 56px;
+    }
+
+    /* ── Browser Chrome ── */
+    .browser-chrome {
+      width: 1280px;
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08);
+      border: 1px solid var(--border);
+      background: var(--card);
+    }
+
+    .browser-topbar {
+      background: #EFEFEF;
+      border-bottom: 1px solid #D0D0D0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+    }
+    .browser-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+    .browser-dot.red   { background: #FF5F57; }
+    .browser-dot.amber { background: #FEBC2E; }
+    .browser-dot.green { background: #28C840; }
+    .browser-addressbar {
+      flex: 1;
+      background: #FFFFFF;
+      border: 1px solid #C8C8C8;
+      border-radius: var(--radius-sm);
+      padding: 4px 10px;
+      font-size: 12px;
+      color: #555;
+      margin-left: 8px;
+      font-family: var(--font-mono);
+    }
+
+    /* ── App Shell ── */
+    .app-shell {
+      display: flex;
+      height: 780px;
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: var(--primary);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .sidebar-wordmark {
+      padding: 22px 20px 18px;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary-fg);
+      letter-spacing: 0.01em;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar-wordmark-icon {
+      width: 26px; height: 26px;
+      background: rgba(255,255,255,0.15);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      font-weight: 500;
+      color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.15s;
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,0.08);
+      color: #FFFFFF;
+    }
+    .nav-item.active {
+      background: rgba(255,255,255,0.15);
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    .nav-icon {
+      width: 18px; height: 18px;
+      opacity: 0.85;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      border-top: 1px solid rgba(255,255,255,0.1);
+      padding: 14px 16px;
+    }
+    .sidebar-user-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.92);
+    }
+    .sidebar-user-farm {
+      font-size: 11.5px;
+      color: rgba(255,255,255,0.55);
+      margin-top: 2px;
+    }
+
+    /* ── Main Content ── */
+    .main-content {
+      flex: 1;
+      background: var(--background);
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .main-inner {
+      padding: 28px 32px 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+    }
+
+    /* ── Page Header ── */
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .page-title-block {}
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #111;
+      line-height: 1.2;
+    }
+    .page-subtitle {
+      font-size: 13.5px;
+      color: var(--muted-fg);
+      margin-top: 4px;
+    }
+    .page-subtitle strong {
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ── Add Cattle Button ── */
+    .btn-add {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 16px;
+      background: var(--primary);
+      color: var(--primary-fg);
+      font-size: 13.5px;
+      font-weight: 600;
+      border-radius: var(--radius-md);
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      letter-spacing: 0.01em;
+    }
+    .btn-add-plus {
+      font-size: 17px;
+      font-weight: 400;
+      line-height: 1;
+      margin-top: -1px;
+    }
+
+    /* ── Filter Row ── */
+    .filter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 30px;
+    }
+    .filter-label {
+      font-size: 12px;
+      color: var(--muted-fg);
+      font-weight: 500;
+    }
+    .filter-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px 4px 12px;
+      background: var(--primary);
+      color: var(--primary-fg);
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: var(--radius-full);
+      cursor: pointer;
+    }
+    .filter-chip-x {
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1;
+      opacity: 0.75;
+      margin-left: 2px;
+    }
+
+    /* ── Table Card ── */
+    .table-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13.5px;
+    }
+
+    thead tr {
+      background: #ECEAE7;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      text-align: left;
+      padding: 10px 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted-fg);
+      white-space: nowrap;
+    }
+    th:first-child { padding-left: 20px; }
+    th:last-child  { padding-right: 20px; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.12s;
+      position: relative;
+    }
+    tbody tr:last-child { border-bottom: none; }
+
+    /* Even-row striping (State 2 only, controlled by class) */
+    .striped tbody tr:nth-child(even) {
+      background: var(--muted);
+    }
+    tbody tr:hover {
+      background: #EDF2F8 !important;
+    }
+
+    /* Sick row amber left border */
+    tbody tr.sick-row {
+      border-left: 2px solid var(--accent);
+    }
+    tbody tr:not(.sick-row) {
+      border-left: 2px solid transparent;
+    }
+
+    td {
+      padding: 12px 16px;
+      color: #1A1A1A;
+      vertical-align: middle;
+    }
+    td:first-child { padding-left: 20px; }
+    td:last-child  { padding-right: 20px; }
+
+    /* Monospace tag ID */
+    td.col-tagid {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: #333;
+    }
+
+    td.col-name   { font-weight: 500; }
+    td.col-breed  { color: var(--muted-fg); }
+    td.col-dob    { color: var(--muted-fg); font-size: 13px; }
+    td.col-report { font-size: 13px; }
+    td.col-report .report-condition { font-weight: 600; color: #1A1A1A; }
+    td.col-report .report-condition.sick { color: #92400E; }
+    td.col-report .report-date { color: var(--muted-fg); margin-left: 4px; }
+
+    /* ── Health Badges ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 9px;
+      border-radius: var(--radius-full);
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      white-space: nowrap;
+    }
+    .badge-healthy {
+      background: #DCFCE7;
+      color: #14532D;
+    }
+    .badge-sick {
+      background: var(--accent);
+      color: var(--accent-fg);
+    }
+
+    /* ── Pagination ── */
+    .pagination-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--card);
+    }
+    .pagination-info {
+      font-size: 12.5px;
+      color: var(--muted-fg);
+    }
+    .pagination-controls {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .pg-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 5px 10px;
+      font-size: 12.5px;
+      font-weight: 500;
+      color: #333;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      min-width: 32px;
+    }
+    .pg-btn.active {
+      background: var(--primary);
+      color: var(--primary-fg);
+      border-color: var(--primary);
+      font-weight: 700;
+    }
+    .pg-btn.disabled { color: var(--muted-fg); cursor: default; }
+    .pg-ellipsis {
+      font-size: 12.5px;
+      color: var(--muted-fg);
+      padding: 0 4px;
+    }
+
+    /* ── Section Labels (meta annotation) ── */
+    .state-label {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #FFFFFF;
+      background: #475569;
+      border-radius: var(--radius-sm);
+      padding: 3px 8px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    /* ── Page-level annotations (outside browser) ── */
+    .annotation-block {
+      width: 1280px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .annotation-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: #475569;
+    }
+    .annotation-desc {
+      font-size: 12px;
+      color: #64748B;
+    }
+
+    /* ── Divider between states ── */
+    .state-divider {
+      width: 100%;
+      border: none;
+      border-top: 1.5px dashed #C8C8C8;
+      margin: 0 -32px;
+      width: calc(100% + 64px);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ================================================================
+     ANNOTATION: State 1
+     ================================================================ -->
+<div class="annotation-block">
+  <div class="annotation-title">State 1 — Filtered: Sick Only (drill-down from Dashboard sick-count)</div>
+  <div class="annotation-desc">User arrives here by clicking "3 Sick" alert on the Dashboard. Active filter chip is pre-applied. Only 3 sick cattle are visible.</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     STATE 1 BROWSER
+     ════════════════════════════════════════════════════════════════ -->
+<div class="browser-chrome">
+
+  <!-- Browser topbar -->
+  <div class="browser-topbar">
+    <div class="browser-dot red"></div>
+    <div class="browser-dot amber"></div>
+    <div class="browser-dot green"></div>
+    <div class="browser-addressbar">farmtracking.app/cattle?health=sick</div>
+  </div>
+
+  <!-- App shell -->
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-wordmark">
+        <div class="sidebar-wordmark-icon">🐄</div>
+        Farm Tracking
+      </div>
+
+      <div class="sidebar-nav">
+        <!-- Dashboard -->
+        <a class="nav-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="7" height="7" rx="1.5"/>
+            <rect x="11" y="2" width="7" height="7" rx="1.5"/>
+            <rect x="2" y="11" width="7" height="7" rx="1.5"/>
+            <rect x="11" y="11" width="7" height="7" rx="1.5"/>
+          </svg>
+          Dashboard
+        </a>
+        <!-- Cattle (ACTIVE) -->
+        <a class="nav-item active" href="#">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="10" cy="13" rx="7" ry="4.5"/>
+            <path d="M6 13V9.5C6 7.567 7.567 6 9.5 6h1C12.433 6 14 7.567 14 9.5V13"/>
+            <circle cx="7.5" cy="5" r="1.2"/>
+            <circle cx="12.5" cy="5" r="1.2"/>
+            <path d="M5.5 5C4.5 4 3.5 3.5 3 4.5M14.5 5C15.5 4 16.5 3.5 17 4.5"/>
+          </svg>
+          Cattle
+        </a>
+        <!-- Notifications -->
+        <a class="nav-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 2a6 6 0 0 1 6 6v3l1.5 2.5H2.5L4 11V8a6 6 0 0 1 6-6z"/>
+            <path d="M8.5 16.5a1.5 1.5 0 0 0 3 0"/>
+          </svg>
+          Notifications
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user-name">Mehmet Yılmaz</div>
+        <div class="sidebar-user-farm">Mehmet's Farm</div>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <div class="main-inner">
+
+        <!-- Page header -->
+        <div class="page-header">
+          <div class="page-title-block">
+            <div class="page-title">Cattle</div>
+            <div class="page-subtitle">47 cattle &nbsp;·&nbsp; <strong>3 sick</strong></div>
+          </div>
+          <button class="btn-add">
+            <span class="btn-add-plus">+</span> Add Cattle
+          </button>
+        </div>
+
+        <!-- Filter chip row -->
+        <div class="filter-row">
+          <span class="filter-label">Active filters:</span>
+          <span class="filter-chip">Health: Sick <span class="filter-chip-x">✕</span></span>
+        </div>
+
+        <!-- Table -->
+        <div class="table-card">
+          <table>
+            <thead>
+              <tr>
+                <th>Health</th>
+                <th>Tag ID</th>
+                <th>Name</th>
+                <th>Breed</th>
+                <th>Date of Birth</th>
+                <th>Last Report</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Bella — Sick -->
+              <tr class="sick-row">
+                <td><span class="badge badge-sick">Sick</span></td>
+                <td class="col-tagid">#TAG-0042</td>
+                <td class="col-name">Bella</td>
+                <td class="col-breed">Holstein</td>
+                <td class="col-dob">Mar 15, 2022</td>
+                <td class="col-report">
+                  <span class="report-condition sick">Mastitis</span>
+                  <span class="report-date">· Today</span>
+                </td>
+              </tr>
+              <!-- Bruno — Sick -->
+              <tr class="sick-row">
+                <td><span class="badge badge-sick">Sick</span></td>
+                <td class="col-tagid">#TAG-0019</td>
+                <td class="col-name">Bruno</td>
+                <td class="col-breed">Simmental</td>
+                <td class="col-dob">Jan 8, 2021</td>
+                <td class="col-report">
+                  <span class="report-condition sick">Respiratory</span>
+                  <span class="report-date">· Jun 11</span>
+                </td>
+              </tr>
+              <!-- Daisy — Sick -->
+              <tr class="sick-row">
+                <td><span class="badge badge-sick">Sick</span></td>
+                <td class="col-tagid">#TAG-0031</td>
+                <td class="col-name">Daisy</td>
+                <td class="col-breed">Angus</td>
+                <td class="col-dob">Sep 22, 2022</td>
+                <td class="col-report">
+                  <span class="report-condition sick">Lameness</span>
+                  <span class="report-date">· Jun 10</span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+
+  </div><!-- /app-shell -->
+</div><!-- /browser-chrome STATE 1 -->
+
+
+<!-- ================================================================
+     ANNOTATION: State 2
+     ================================================================ -->
+<div class="annotation-block">
+  <div class="annotation-title">State 2 — All Cattle, Unfiltered (default view)</div>
+  <div class="annotation-desc">No filter chip. Full roster with mixed healthy/sick rows. Even-row striping, amber left border on sick rows, and pagination. Clicking any row opens Cattle Profile.</div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════
+     STATE 2 BROWSER
+     ════════════════════════════════════════════════════════════════ -->
+<div class="browser-chrome">
+
+  <!-- Browser topbar -->
+  <div class="browser-topbar">
+    <div class="browser-dot red"></div>
+    <div class="browser-dot amber"></div>
+    <div class="browser-dot green"></div>
+    <div class="browser-addressbar">farmtracking.app/cattle</div>
+  </div>
+
+  <!-- App shell -->
+  <div class="app-shell">
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-wordmark">
+        <div class="sidebar-wordmark-icon">🐄</div>
+        Farm Tracking
+      </div>
+
+      <div class="sidebar-nav">
+        <a class="nav-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="2" width="7" height="7" rx="1.5"/>
+            <rect x="11" y="2" width="7" height="7" rx="1.5"/>
+            <rect x="2" y="11" width="7" height="7" rx="1.5"/>
+            <rect x="11" y="11" width="7" height="7" rx="1.5"/>
+          </svg>
+          Dashboard
+        </a>
+        <a class="nav-item active" href="#">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="10" cy="13" rx="7" ry="4.5"/>
+            <path d="M6 13V9.5C6 7.567 7.567 6 9.5 6h1C12.433 6 14 7.567 14 9.5V13"/>
+            <circle cx="7.5" cy="5" r="1.2"/>
+            <circle cx="12.5" cy="5" r="1.2"/>
+            <path d="M5.5 5C4.5 4 3.5 3.5 3 4.5M14.5 5C15.5 4 16.5 3.5 17 4.5"/>
+          </svg>
+          Cattle
+        </a>
+        <a class="nav-item" href="#">
+          <svg class="nav-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10 2a6 6 0 0 1 6 6v3l1.5 2.5H2.5L4 11V8a6 6 0 0 1 6-6z"/>
+            <path d="M8.5 16.5a1.5 1.5 0 0 0 3 0"/>
+          </svg>
+          Notifications
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="sidebar-user-name">Mehmet Yılmaz</div>
+        <div class="sidebar-user-farm">Mehmet's Farm</div>
+      </div>
+    </nav>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <div class="main-inner">
+
+        <!-- Page header -->
+        <div class="page-header">
+          <div class="page-title-block">
+            <div class="page-title">Cattle</div>
+            <div class="page-subtitle">47 cattle &nbsp;·&nbsp; <strong>3 sick</strong></div>
+          </div>
+          <button class="btn-add">
+            <span class="btn-add-plus">+</span> Add Cattle
+          </button>
+        </div>
+
+        <!-- No filter chips in State 2 -->
+
+        <!-- Table -->
+        <div class="table-card">
+          <table class="striped">
+            <thead>
+              <tr>
+                <th>Health</th>
+                <th>Tag ID</th>
+                <th>Name</th>
+                <th>Breed</th>
+                <th>Date of Birth</th>
+                <th>Last Report</th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <!-- Row 1: Bella — Sick (odd) -->
+              <tr class="sick-row">
+                <td><span class="badge badge-sick">Sick</span></td>
+                <td class="col-tagid">#TAG-0042</td>
+                <td class="col-name">Bella</td>
+                <td class="col-breed">Holstein</td>
+                <td class="col-dob">Mar 15, 2022</td>
+                <td class="col-report">
+                  <span class="report-condition sick">Mastitis</span>
+                  <span class="report-date">· Today</span>
+                </td>
+              </tr>
+
+              <!-- Row 2: Atlas — Healthy (even → muted stripe) -->
+              <tr>
+                <td><span class="badge badge-healthy">Healthy</span></td>
+                <td class="col-tagid">#TAG-0001</td>
+                <td class="col-name">Atlas</td>
+                <td class="col-breed">Holstein</td>
+                <td class="col-dob">Feb 3, 2020</td>
+                <td class="col-report">
+                  <span class="report-condition">Healthy</span>
+                  <span class="report-date">· Jun 1</span>
+                </td>
+              </tr>
+
+              <!-- Row 3: Bruno — Sick (odd) -->
+              <tr class="sick-row">
+                <td><span class="badge badge-sick">Sick</span></td>
+                <td class="col-tagid">#TAG-0019</td>
+                <td class="col-name">Bruno</td>
+                <td class="col-breed">Simmental</td>
+                <td class="col-dob">Jan 8, 2021</td>
+                <td class="col-report">
+                  <span class="report-condition sick">Respiratory</span>
+                  <span class="report-date">· Jun 11</span>
+                </td>
+              </tr>
+
+              <!-- Row 4: Clara — Healthy (even → muted stripe) -->
+              <tr>
+                <td><span class="badge badge-healthy">Healthy</span></td>
+                <td class="col-tagid">#TAG-0003</td>
+                <td class="col-name">Clara</td>
+                <td class="col-breed">Jersey</td>
+                <td class="col-dob">May 12, 2021</td>
+                <td class="col-report">
+                  <span class="report-condition">Healthy</span>
+                  <span class="report-date">· May 28</span>
+                </td>
+              </tr>
+
+              <!-- Row 5: Daisy — Sick (odd) -->
+              <tr class="sick-row">
+                <td><span class="badge badge-sick">Sick</span></td>
+                <td class="col-tagid">#TAG-0031</td>
+                <td class="col-name">Daisy</td>
+                <td class="col-breed">Angus</td>
+                <td class="col-dob">Sep 22, 2022</td>
+                <td class="col-report">
+                  <span class="report-condition sick">Lameness</span>
+                  <span class="report-date">· Jun 10</span>
+                </td>
+              </tr>
+
+              <!-- Row 6: Echo — Healthy (even → muted stripe) -->
+              <tr>
+                <td><span class="badge badge-healthy">Healthy</span></td>
+                <td class="col-tagid">#TAG-0022</td>
+                <td class="col-name">Echo</td>
+                <td class="col-breed">Simmental</td>
+                <td class="col-dob">Nov 30, 2022</td>
+                <td class="col-report">
+                  <span class="report-condition">Healthy</span>
+                  <span class="report-date">· Jun 5</span>
+                </td>
+              </tr>
+
+              <!-- Row 7: Fern — Healthy (odd) -->
+              <tr>
+                <td><span class="badge badge-healthy">Healthy</span></td>
+                <td class="col-tagid">#TAG-0055</td>
+                <td class="col-name">Fern</td>
+                <td class="col-breed">Holstein</td>
+                <td class="col-dob">Jul 4, 2023</td>
+                <td class="col-report">
+                  <span class="report-condition">Healthy</span>
+                  <span class="report-date">· Jun 3</span>
+                </td>
+              </tr>
+
+              <!-- Row 8: George — Healthy (even → muted stripe) -->
+              <tr>
+                <td><span class="badge badge-healthy">Healthy</span></td>
+                <td class="col-tagid">#TAG-0008</td>
+                <td class="col-name">George</td>
+                <td class="col-breed">Angus</td>
+                <td class="col-dob">Mar 19, 2020</td>
+                <td class="col-report">
+                  <span class="report-condition">Healthy</span>
+                  <span class="report-date">· May 30</span>
+                </td>
+              </tr>
+
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          <div class="pagination-row">
+            <span class="pagination-info">Showing 8 of 47</span>
+            <div class="pagination-controls">
+              <button class="pg-btn disabled">← Prev</button>
+              <button class="pg-btn active">1</button>
+              <button class="pg-btn">2</button>
+              <button class="pg-btn">3</button>
+              <span class="pg-ellipsis">…</span>
+              <button class="pg-btn">6</button>
+              <button class="pg-btn">Next →</button>
+            </div>
+          </div>
+
+        </div><!-- /table-card -->
+
+      </div><!-- /main-inner -->
+    </main>
+
+  </div><!-- /app-shell -->
+</div><!-- /browser-chrome STATE 2 -->
+
+</body>
+</html>

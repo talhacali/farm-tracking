@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farm Tracking — Color Theme Picker</title>
+  <style>
+    /* ===================================================
+       RESET & BASE
+       =================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   Helvetica, Arial, sans-serif;
+      background: #F0F0EC;
+      color: #18181B;
+      min-height: 100vh;
+      padding: 40px 24px 64px;
+    }
+
+    /* ===================================================
+       PAGE HEADER
+       =================================================== */
+    .page-header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+    .page-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #18181B;
+    }
+    .page-header p {
+      margin-top: 6px;
+      font-size: 0.875rem;
+      color: #71717A;
+    }
+    .page-header .label {
+      display: inline-block;
+      margin-top: 12px;
+      background: #18181B;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    /* ===================================================
+       LAYOUT — THREE COLUMNS
+       =================================================== */
+    .themes-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    @media (max-width: 900px) {
+      .themes-grid { grid-template-columns: 1fr; max-width: 480px; }
+    }
+
+    /* ===================================================
+       THEME CARD SHELL
+       =================================================== */
+    .theme-card {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 16px rgba(0,0,0,.06);
+      overflow: hidden;
+    }
+
+    /* ---- Card top bar (option label) ---- */
+    .card-top-bar {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      padding: 6px 16px;
+      text-align: center;
+    }
+
+    /* ---- Theme header ---- */
+    .theme-header {
+      padding: 20px 20px 16px;
+    }
+    .theme-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .theme-register {
+      margin-top: 4px;
+      font-size: 0.8rem;
+      opacity: .65;
+    }
+
+    /* ---- Divider ---- */
+    .divider {
+      height: 1px;
+      margin: 0 20px;
+    }
+
+    /* ---- Token chips section ---- */
+    .tokens-section {
+      padding: 16px 20px;
+    }
+    .tokens-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #A1A1AA;
+      margin-bottom: 10px;
+    }
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .token-chip {
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,.08);
+    }
+    .chip-swatch {
+      height: 28px;
+    }
+    .chip-label {
+      padding: 4px 6px 5px;
+      background: #FAFAFA;
+      border-top: 1px solid rgba(0,0,0,.06);
+    }
+    .chip-name {
+      font-size: 0.6rem;
+      font-weight: 600;
+      color: #52525B;
+      display: block;
+    }
+    .chip-hex {
+      font-size: 0.58rem;
+      color: #A1A1AA;
+      font-family: "SF Mono", "Fira Mono", "Consolas", monospace;
+    }
+
+    /* ---- UI Snippet section ---- */
+    .snippet-section {
+      padding: 0 20px 20px;
+    }
+    .snippet-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #A1A1AA;
+      margin-bottom: 10px;
+    }
+    .snippet-frame {
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,.08);
+    }
+
+    /* ---- Nav bar inside snippet ---- */
+    .snippet-nav {
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      height: 40px;
+      gap: 4px;
+    }
+    .nav-brand {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      flex: 1;
+    }
+    .nav-item {
+      font-size: 0.7rem;
+      font-weight: 500;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: default;
+    }
+    .nav-item.active {
+      font-weight: 600;
+    }
+
+    /* ---- Snippet content area ---- */
+    .snippet-body {
+      padding: 14px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ---- Stat card ---- */
+    .stat-card {
+      flex: 1;
+      min-width: 120px;
+      border-radius: 8px;
+      padding: 14px 16px;
+      border: 1px solid rgba(0,0,0,.07);
+    }
+    .stat-card-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .stat-card-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .stat-card-sub {
+      margin-top: 6px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 2px 7px;
+      border-radius: 999px;
+      font-size: 0.65rem;
+      font-weight: 700;
+    }
+    .stat-card-footer {
+      margin-top: 10px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(0,0,0,.07);
+      font-size: 0.65rem;
+    }
+    /* mini second card */
+    .mini-card {
+      width: 88px;
+      border-radius: 8px;
+      padding: 12px;
+      border: 1px solid rgba(0,0,0,.07);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .mini-card-icon {
+      font-size: 1.1rem;
+      margin-bottom: 6px;
+    }
+    .mini-card-num {
+      font-size: 1.1rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .mini-card-lbl {
+      font-size: 0.6rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-top: 4px;
+    }
+    /* button inside snippet */
+    .snippet-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: default;
+      border: none;
+      margin-top: 4px;
+      letter-spacing: 0.01em;
+    }
+
+    /* ==================================================
+       =====================================================
+       OPTION A — "Field & Clinic"
+       =====================================================
+       background:          #F8F7F4  (warm off-white)
+       foreground:          #1A1A2E  (near-black with blue tint)
+       primary:             #1E3A5F  (deep slate-navy)
+       primary-foreground:  #FFFFFF
+       accent:              #D97706  (warm amber)
+       accent-foreground:   #FFFFFF
+       muted:               #EEF0F5  (cool pale grey)
+       muted-foreground:    #64748B  (slate-grey text)
+       border:              #D1D9E6  (light blue-grey)
+       =================================================== */
+
+    .a-card-bar    { background: #1E3A5F; color: #fff; }
+    .a-theme-name  { color: #1E3A5F; }
+    .a-divider     { background: #D1D9E6; }
+
+    /* tokens */
+    .a-bg           { background: #F8F7F4; }
+    .a-fg           { background: #1A1A2E; }
+    .a-primary      { background: #1E3A5F; }
+    .a-primary-fg   { background: #FFFFFF; border: 1px solid #D1D9E6; }
+    .a-accent       { background: #D97706; }
+    .a-accent-fg    { background: #FFFFFF; border: 1px solid #D1D9E6; }
+    .a-muted        { background: #EEF0F5; }
+    .a-muted-fg     { background: #64748B; }
+    .a-border       { background: #D1D9E6; }
+
+    /* snippet — nav */
+    .a-nav          { background: #1E3A5F; }
+    .a-nav-brand    { color: #FFFFFF; }
+    .a-nav-item     { color: rgba(255,255,255,.65); }
+    .a-nav-active   { background: rgba(255,255,255,.12); color: #FFFFFF; }
+
+    /* snippet — body */
+    .a-body         { background: #F8F7F4; }
+    .a-stat-card    { background: #FFFFFF; border-color: #D1D9E6; }
+    .a-stat-label   { color: #64748B; }
+    .a-stat-value   { color: #1A1A2E; }
+    .a-stat-sub     { color: #64748B; }
+    .a-badge        { background: #FEF3C7; color: #92400E; }
+    .a-stat-footer  { color: #94A3B8; }
+    .a-mini-card    { background: #EEF0F5; border-color: #D1D9E6; }
+    .a-mini-icon    { color: #1E3A5F; }
+    .a-mini-num     { color: #1E3A5F; }
+    .a-mini-lbl     { color: #64748B; }
+    .a-btn          { background: #D97706; color: #FFFFFF; }
+    .a-btn-outline  { background: transparent; color: #1E3A5F;
+                      border: 1.5px solid #1E3A5F; }
+
+    /* ==================================================
+       =====================================================
+       OPTION B — "Modern Neutral"
+       =====================================================
+       background:          #FFFFFF
+       foreground:          #18181B  (zinc-900)
+       primary:             #18181B  (near-black)
+       primary-foreground:  #FAFAFA
+       accent:              #0D9488  (teal-600)
+       accent-foreground:   #FFFFFF
+       muted:               #F4F4F5  (zinc-100)
+       muted-foreground:    #71717A  (zinc-500)
+       border:              #E4E4E7  (zinc-200)
+       =================================================== */
+
+    .b-card-bar    { background: #18181B; color: #fff; }
+    .b-theme-name  { color: #18181B; }
+    .b-divider     { background: #E4E4E7; }
+
+    .b-bg           { background: #FFFFFF; border: 1px solid #E4E4E7; }
+    .b-fg           { background: #18181B; }
+    .b-primary      { background: #18181B; }
+    .b-primary-fg   { background: #FAFAFA; border: 1px solid #E4E4E7; }
+    .b-accent       { background: #0D9488; }
+    .b-accent-fg    { background: #FFFFFF; border: 1px solid #E4E4E7; }
+    .b-muted        { background: #F4F4F5; }
+    .b-muted-fg     { background: #71717A; }
+    .b-border       { background: #E4E4E7; }
+
+    .b-nav          { background: #18181B; }
+    .b-nav-brand    { color: #FAFAFA; }
+    .b-nav-item     { color: rgba(255,255,255,.5); }
+    .b-nav-active   { background: rgba(255,255,255,.1); color: #FAFAFA; }
+
+    .b-body         { background: #FFFFFF; }
+    .b-stat-card    { background: #FFFFFF; border-color: #E4E4E7; }
+    .b-stat-label   { color: #71717A; }
+    .b-stat-value   { color: #18181B; }
+    .b-stat-sub     { color: #71717A; }
+    .b-badge        { background: #CCFBF1; color: #0F766E; }
+    .b-badge-alert  { background: #FEE2E2; color: #991B1B; }
+    .b-stat-footer  { color: #A1A1AA; }
+    .b-mini-card    { background: #F4F4F5; border-color: #E4E4E7; }
+    .b-mini-icon    { color: #0D9488; }
+    .b-mini-num     { color: #18181B; }
+    .b-mini-lbl     { color: #71717A; }
+    .b-btn          { background: #0D9488; color: #FFFFFF; }
+    .b-btn-outline  { background: transparent; color: #18181B;
+                      border: 1.5px solid #E4E4E7; }
+
+    /* ==================================================
+       =====================================================
+       OPTION C — "Earthy Professional"
+       =====================================================
+       background:          #FAFAF5  (light sand/cream)
+       foreground:          #1C1917  (warm near-black)
+       primary:             #14532D  (forest green)
+       primary-foreground:  #FFFFFF
+       accent:              #C2410C  (terracotta)
+       accent-foreground:   #FFFFFF
+       muted:               #F0EDE6  (warm light tan)
+       muted-foreground:    #78716C  (warm grey)
+       border:              #DDD7CC  (warm beige border)
+       =================================================== */
+
+    .c-card-bar    { background: #14532D; color: #fff; }
+    .c-theme-name  { color: #14532D; }
+    .c-divider     { background: #DDD7CC; }
+
+    .c-bg           { background: #FAFAF5; }
+    .c-fg           { background: #1C1917; }
+    .c-primary      { background: #14532D; }
+    .c-primary-fg   { background: #FFFFFF; border: 1px solid #DDD7CC; }
+    .c-accent       { background: #C2410C; }
+    .c-accent-fg    { background: #FFFFFF; border: 1px solid #DDD7CC; }
+    .c-muted        { background: #F0EDE6; }
+    .c-muted-fg     { background: #78716C; }
+    .c-border       { background: #DDD7CC; }
+
+    .c-nav          { background: #14532D; }
+    .c-nav-brand    { color: #FFFFFF; }
+    .c-nav-item     { color: rgba(255,255,255,.6); }
+    .c-nav-active   { background: rgba(255,255,255,.15); color: #FFFFFF; }
+
+    .c-body         { background: #FAFAF5; }
+    .c-stat-card    { background: #FFFFFF; border-color: #DDD7CC; }
+    .c-stat-label   { color: #78716C; }
+    .c-stat-value   { color: #1C1917; }
+    .c-stat-sub     { color: #78716C; }
+    .c-badge        { background: #FEF2EC; color: #9A3412; }
+    .c-stat-footer  { color: #A8A29E; }
+    .c-mini-card    { background: #F0EDE6; border-color: #DDD7CC; }
+    .c-mini-icon    { color: #14532D; }
+    .c-mini-num     { color: #14532D; }
+    .c-mini-lbl     { color: #78716C; }
+    .c-btn          { background: #14532D; color: #FFFFFF; }
+    .c-btn-accent   { background: #C2410C; color: #FFFFFF; }
+
+  </style>
+</head>
+<body>
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <h1>Farm Tracking — Color Theme Selection</h1>
+    <p>Review three distinct theme directions. Choose one to carry forward into the full design system.</p>
+    <span class="label">Light Mode · Desktop-First · shadcn/ui</span>
+  </div>
+
+  <!-- THREE THEME COLUMNS -->
+  <div class="themes-grid">
+
+    <!-- ====================================================
+         OPTION A — Field & Clinic
+         ==================================================== -->
+    <div class="theme-card">
+
+      <div class="card-top-bar a-card-bar">Option A</div>
+
+      <div class="theme-header">
+        <div class="theme-name a-theme-name">Field &amp; Clinic</div>
+        <div class="theme-register">Professional &amp; trustworthy — navy signals expertise; amber signals urgency</div>
+      </div>
+
+      <div class="divider a-divider"></div>
+
+      <!-- Token Chips -->
+      <div class="tokens-section">
+        <div class="tokens-label">Design Tokens</div>
+        <div class="token-grid">
+
+          <div class="token-chip">
+            <div class="chip-swatch a-bg"></div>
+            <div class="chip-label">
+              <span class="chip-name">background</span>
+              <span class="chip-hex">#F8F7F4</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch a-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">foreground</span>
+              <span class="chip-hex">#1A1A2E</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch a-primary"></div>
+            <div class="chip-label">
+              <span class="chip-name">primary</span>
+              <span class="chip-hex">#1E3A5F</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch a-primary-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">primary-fg</span>
+              <span class="chip-hex">#FFFFFF</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch a-accent"></div>
+            <div class="chip-label">
+              <span class="chip-name">accent</span>
+              <span class="chip-hex">#D97706</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch a-accent-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">accent-fg</span>
+              <span class="chip-hex">#FFFFFF</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch a-muted"></div>
+            <div class="chip-label">
+              <span class="chip-name">muted</span>
+              <span class="chip-hex">#EEF0F5</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch a-muted-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">muted-fg</span>
+              <span class="chip-hex">#64748B</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch a-border"></div>
+            <div class="chip-label">
+              <span class="chip-name">border</span>
+              <span class="chip-hex">#D1D9E6</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="divider a-divider"></div>
+
+      <!-- UI Snippet -->
+      <div class="snippet-section" style="padding-top:16px;">
+        <div class="snippet-label">UI Preview — Farmer Dashboard</div>
+        <div class="snippet-frame">
+
+          <!-- Nav -->
+          <div class="snippet-nav a-nav">
+            <span class="nav-brand a-nav-brand">FarmTrack</span>
+            <span class="nav-item a-nav-item">Herd</span>
+            <span class="nav-item active a-nav-active">Dashboard</span>
+            <span class="nav-item a-nav-item">Reports</span>
+          </div>
+
+          <!-- Body -->
+          <div class="snippet-body a-body">
+
+            <!-- Main stat card -->
+            <div class="stat-card a-stat-card" style="flex:2;">
+              <div class="stat-card-label a-stat-label">Herd Overview</div>
+              <div class="stat-card-value a-stat-value">24</div>
+              <div class="stat-card-sub a-stat-sub">
+                Cattle total
+                <span class="badge a-badge">3 Sick</span>
+              </div>
+              <div class="stat-card-footer a-stat-footer" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Updated just now</span>
+                <button class="snippet-btn a-btn">View Alerts</button>
+              </div>
+            </div>
+
+            <!-- Mini card -->
+            <div class="mini-card a-mini-card">
+              <div class="mini-card-icon a-mini-icon">&#x2665;</div>
+              <div>
+                <div class="mini-card-num a-mini-num">98%</div>
+                <div class="mini-card-lbl a-mini-lbl">Healthy</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /Option A -->
+
+
+    <!-- ====================================================
+         OPTION B — Modern Neutral
+         ==================================================== -->
+    <div class="theme-card">
+
+      <div class="card-top-bar b-card-bar">Option B</div>
+
+      <div class="theme-header">
+        <div class="theme-name b-theme-name">Modern Neutral</div>
+        <div class="theme-register">Clean &amp; minimal SaaS feel — zero agricultural cliché, maximum clarity</div>
+      </div>
+
+      <div class="divider b-divider"></div>
+
+      <!-- Token Chips -->
+      <div class="tokens-section">
+        <div class="tokens-label">Design Tokens</div>
+        <div class="token-grid">
+
+          <div class="token-chip">
+            <div class="chip-swatch b-bg"></div>
+            <div class="chip-label">
+              <span class="chip-name">background</span>
+              <span class="chip-hex">#FFFFFF</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch b-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">foreground</span>
+              <span class="chip-hex">#18181B</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch b-primary"></div>
+            <div class="chip-label">
+              <span class="chip-name">primary</span>
+              <span class="chip-hex">#18181B</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch b-primary-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">primary-fg</span>
+              <span class="chip-hex">#FAFAFA</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch b-accent"></div>
+            <div class="chip-label">
+              <span class="chip-name">accent</span>
+              <span class="chip-hex">#0D9488</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch b-accent-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">accent-fg</span>
+              <span class="chip-hex">#FFFFFF</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch b-muted"></div>
+            <div class="chip-label">
+              <span class="chip-name">muted</span>
+              <span class="chip-hex">#F4F4F5</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch b-muted-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">muted-fg</span>
+              <span class="chip-hex">#71717A</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch b-border"></div>
+            <div class="chip-label">
+              <span class="chip-name">border</span>
+              <span class="chip-hex">#E4E4E7</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="divider b-divider"></div>
+
+      <!-- UI Snippet -->
+      <div class="snippet-section" style="padding-top:16px;">
+        <div class="snippet-label">UI Preview — Farmer Dashboard</div>
+        <div class="snippet-frame">
+
+          <!-- Nav -->
+          <div class="snippet-nav b-nav">
+            <span class="nav-brand b-nav-brand">FarmTrack</span>
+            <span class="nav-item b-nav-item">Herd</span>
+            <span class="nav-item active b-nav-active">Dashboard</span>
+            <span class="nav-item b-nav-item">Reports</span>
+          </div>
+
+          <!-- Body -->
+          <div class="snippet-body b-body">
+
+            <div class="stat-card b-stat-card" style="flex:2;">
+              <div class="stat-card-label b-stat-label">Herd Overview</div>
+              <div class="stat-card-value b-stat-value">24</div>
+              <div class="stat-card-sub b-stat-sub">
+                Cattle total
+                <span class="badge b-badge-alert">3 Sick</span>
+              </div>
+              <div class="stat-card-footer b-stat-footer" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Updated just now</span>
+                <button class="snippet-btn b-btn">View Alerts</button>
+              </div>
+            </div>
+
+            <div class="mini-card b-mini-card">
+              <div class="mini-card-icon b-mini-icon">&#x2665;</div>
+              <div>
+                <div class="mini-card-num b-mini-num">98%</div>
+                <div class="mini-card-lbl b-mini-lbl">Healthy</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /Option B -->
+
+
+    <!-- ====================================================
+         OPTION C — Earthy Professional
+         ==================================================== -->
+    <div class="theme-card">
+
+      <div class="card-top-bar c-card-bar">Option C</div>
+
+      <div class="theme-header">
+        <div class="theme-name c-theme-name">Earthy Professional</div>
+        <div class="theme-register">Warm &amp; grounded — subtle agricultural soul, not a farmyard stereotype</div>
+      </div>
+
+      <div class="divider c-divider"></div>
+
+      <!-- Token Chips -->
+      <div class="tokens-section">
+        <div class="tokens-label">Design Tokens</div>
+        <div class="token-grid">
+
+          <div class="token-chip">
+            <div class="chip-swatch c-bg"></div>
+            <div class="chip-label">
+              <span class="chip-name">background</span>
+              <span class="chip-hex">#FAFAF5</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch c-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">foreground</span>
+              <span class="chip-hex">#1C1917</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch c-primary"></div>
+            <div class="chip-label">
+              <span class="chip-name">primary</span>
+              <span class="chip-hex">#14532D</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch c-primary-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">primary-fg</span>
+              <span class="chip-hex">#FFFFFF</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch c-accent"></div>
+            <div class="chip-label">
+              <span class="chip-name">accent</span>
+              <span class="chip-hex">#C2410C</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch c-accent-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">accent-fg</span>
+              <span class="chip-hex">#FFFFFF</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch c-muted"></div>
+            <div class="chip-label">
+              <span class="chip-name">muted</span>
+              <span class="chip-hex">#F0EDE6</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch c-muted-fg"></div>
+            <div class="chip-label">
+              <span class="chip-name">muted-fg</span>
+              <span class="chip-hex">#78716C</span>
+            </div>
+          </div>
+
+          <div class="token-chip">
+            <div class="chip-swatch c-border"></div>
+            <div class="chip-label">
+              <span class="chip-name">border</span>
+              <span class="chip-hex">#DDD7CC</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="divider c-divider"></div>
+
+      <!-- UI Snippet -->
+      <div class="snippet-section" style="padding-top:16px;">
+        <div class="snippet-label">UI Preview — Farmer Dashboard</div>
+        <div class="snippet-frame">
+
+          <!-- Nav -->
+          <div class="snippet-nav c-nav">
+            <span class="nav-brand c-nav-brand">FarmTrack</span>
+            <span class="nav-item c-nav-item">Herd</span>
+            <span class="nav-item active c-nav-active">Dashboard</span>
+            <span class="nav-item c-nav-item">Reports</span>
+          </div>
+
+          <!-- Body -->
+          <div class="snippet-body c-body">
+
+            <div class="stat-card c-stat-card" style="flex:2;">
+              <div class="stat-card-label c-stat-label">Herd Overview</div>
+              <div class="stat-card-value c-stat-value">24</div>
+              <div class="stat-card-sub c-stat-sub">
+                Cattle total
+                <span class="badge c-badge">3 Sick</span>
+              </div>
+              <div class="stat-card-footer c-stat-footer" style="display:flex; justify-content:space-between; align-items:center;">
+                <span>Updated just now</span>
+                <button class="snippet-btn c-btn-accent">View Alerts</button>
+              </div>
+            </div>
+
+            <div class="mini-card c-mini-card">
+              <div class="mini-card-icon c-mini-icon">&#x2665;</div>
+              <div>
+                <div class="mini-card-num c-mini-num">98%</div>
+                <div class="mini-card-lbl c-mini-lbl">Healthy</div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /Option C -->
+
+  </div><!-- /themes-grid -->
+
+</body>
+</html>

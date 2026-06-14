@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Health Report View — Farm Tracking</title>
+<style>
+  /* ── Design tokens ── */
+  :root {
+    --primary: #1E3A5F;
+    --primary-fg: #FFFFFF;
+    --accent: #D97706;
+    --accent-fg: #1A0E00;
+    --background: #FAFAF8;
+    --card: #FFFFFF;
+    --muted: #F1F0EE;
+    --muted-fg: #6B6B6B;
+    --border: #E2E1DF;
+    --foreground: #111111;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-full: 9999px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #D0CEC9;
+    min-height: 100vh;
+    padding: 32px 24px 48px;
+    color: var(--foreground);
+  }
+
+  /* ── Section labels ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted-fg);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+
+  /* ── Page wrapper: two browser frames side by side ── */
+  .comparison-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .variant-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  /* ── Browser chrome frame ── */
+  .browser-frame {
+    flex: 1;
+    min-width: 0;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10);
+    background: var(--card);
+  }
+
+  .browser-chrome {
+    background: #ECECEC;
+    border-bottom: 1px solid #D0CFCC;
+    padding: 9px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .browser-dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .browser-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+  }
+  .dot-red   { background: #FF5F57; }
+  .dot-yellow{ background: #FFBD2E; }
+  .dot-green { background: #28C840; }
+
+  .browser-url {
+    flex: 1;
+    background: #FAFAFA;
+    border: 1px solid #D0CFCC;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 11px;
+    color: #555;
+    letter-spacing: 0.01em;
+  }
+
+  /* ── App shell ── */
+  .app-shell {
+    display: flex;
+    height: 620px;
+    background: var(--background);
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 210px;
+    flex-shrink: 0;
+    background: var(--card);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-logo {
+    padding: 18px 18px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-logo-text {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: -0.3px;
+  }
+
+  .sidebar-logo-sub {
+    font-size: 10px;
+    color: var(--muted-fg);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .sidebar-nav {
+    flex: 1;
+    padding: 10px 0;
+    overflow: hidden;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 18px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--muted-fg);
+    cursor: pointer;
+    text-decoration: none;
+    border-left: 3px solid transparent;
+  }
+
+  .nav-item:hover {
+    background: var(--muted);
+    color: var(--foreground);
+  }
+
+  .nav-item.active {
+    background: rgba(30,58,95,0.08);
+    color: var(--primary);
+    border-left-color: var(--primary);
+    font-weight: 600;
+  }
+
+  .nav-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    opacity: 0.65;
+  }
+
+  .nav-item.active .nav-icon {
+    opacity: 1;
+  }
+
+  .nav-badge {
+    margin-left: auto;
+    background: var(--accent);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: var(--radius-full);
+    padding: 1px 6px;
+    min-width: 17px;
+    text-align: center;
+  }
+
+  .sidebar-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 6px 14px;
+  }
+
+  .farm-switcher {
+    margin: 6px 12px 2px;
+    background: var(--muted);
+    border-radius: var(--radius-md);
+    padding: 7px 10px;
+    font-size: 12px;
+    color: var(--foreground);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .farm-switcher-label {
+    font-size: 10px;
+    color: var(--muted-fg);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 1px;
+  }
+
+  .farm-switcher-icon {
+    width: 14px;
+    height: 14px;
+    margin-left: auto;
+    opacity: 0.4;
+    flex-shrink: 0;
+  }
+
+  .sidebar-user {
+    padding: 12px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-full);
+    background: var(--primary);
+    color: var(--primary-fg);
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+  }
+
+  .user-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--foreground);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .user-org {
+    font-size: 11px;
+    color: var(--muted-fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── Main content ── */
+  .main-content {
+    flex: 1;
+    min-width: 0;
+    overflow-y: auto;
+    padding: 22px 24px 28px;
+  }
+
+  /* Back link */
+  .back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 13px;
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+    margin-bottom: 14px;
+    opacity: 0.85;
+  }
+
+  .back-link:hover {
+    text-decoration: underline;
+    opacity: 1;
+  }
+
+  /* Page header */
+  .page-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--foreground);
+    letter-spacing: -0.3px;
+    margin-bottom: 5px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    color: var(--muted-fg);
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 20px;
+  }
+
+  .subtitle-sep {
+    color: var(--border);
+    font-size: 14px;
+  }
+
+  /* Two-column report layout */
+  .report-grid {
+    display: grid;
+    grid-template-columns: 60fr 40fr;
+    gap: 20px;
+    align-items: start;
+  }
+
+  /* ── Left column: thermal ── */
+  .thermal-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .thermal-card-inner {
+    padding: 16px 16px 14px;
+  }
+
+  /* Thermal image container */
+  .thermal-wrap {
+    position: relative;
+    width: 100%;
+    height: 240px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: #0a0a0a;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+  }
+
+  /* Thermal layers — identical to scan viewer */
+  .th-base {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 110px 90px at 62% 52%, rgba(255,255,255,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 200px 160px at 55% 55%, #1a0800 0%, transparent 80%),
+      #0a0a0a;
+  }
+
+  .th-body {
+    position: absolute;
+    left: 18%; top: 10%;
+    width: 65%; height: 78%;
+    border-radius: 40% 45% 38% 42% / 35% 40% 45% 40%;
+    background: radial-gradient(ellipse 80% 60% at 50% 50%, #7B2D00 0%, #3D1200 60%, transparent 100%);
+    opacity: 0.95;
+  }
+
+  .th-hotspot-1 {
+    position: absolute;
+    left: 20%; top: 18%;
+    width: 34%; height: 44%;
+    background: radial-gradient(ellipse 55% 65% at 50% 45%,
+      #FFFFFF 0%, #FFD700 8%, #FF6600 22%, #CC2200 40%, #8B0000 60%, transparent 80%);
+    opacity: 0.92;
+  }
+
+  .th-hotspot-2 {
+    position: absolute;
+    left: 48%; top: 30%;
+    width: 22%; height: 28%;
+    background: radial-gradient(ellipse 70% 70% at 50% 50%,
+      #FF8800 0%, #CC4400 35%, #8B1A00 65%, transparent 90%);
+    opacity: 0.78;
+  }
+
+  .th-cool-1 { position: absolute; left: 22%; top: 70%; width: 10%; height: 22%; background: radial-gradient(ellipse at 50% 30%, #1A3A6B 0%, #0A1A30 60%, transparent 100%); opacity: 0.85; border-radius: 30%; }
+  .th-cool-2 { position: absolute; left: 36%; top: 72%; width: 9%;  height: 20%; background: radial-gradient(ellipse at 50% 30%, #1A3A6B 0%, #0A1A30 60%, transparent 100%); opacity: 0.85; border-radius: 30%; }
+  .th-cool-3 { position: absolute; left: 52%; top: 70%; width: 9%;  height: 22%; background: radial-gradient(ellipse at 50% 30%, #1A3A6B 0%, #0A1A30 60%, transparent 100%); opacity: 0.85; border-radius: 30%; }
+  .th-cool-4 { position: absolute; left: 65%; top: 72%; width: 9%;  height: 20%; background: radial-gradient(ellipse at 50% 30%, #1A3A6B 0%, #0A1A30 60%, transparent 100%); opacity: 0.85; border-radius: 30%; }
+
+  .th-head {
+    position: absolute;
+    left: 69%; top: 14%;
+    width: 18%; height: 30%;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 50%, #FF5500 0%, #AA2200 45%, #5A0E00 80%, transparent 100%);
+    opacity: 0.80;
+  }
+
+  .th-scale {
+    position: absolute;
+    right: 10px; top: 14px; bottom: 14px;
+    width: 12px;
+    border-radius: 3px;
+    background: linear-gradient(to bottom, #FFFFFF 0%, #FFD700 12%, #FF6600 28%, #CC2200 44%, #8B0000 60%, #1A006B 76%, #060626 100%);
+    box-shadow: 0 0 4px rgba(0,0,0,0.5);
+  }
+
+  .th-scale-hi {
+    position: absolute;
+    right: 26px; top: 10px;
+    font-size: 8px; color: rgba(255,255,255,0.65); font-weight: 600; letter-spacing: 0.02em;
+  }
+
+  .th-scale-lo {
+    position: absolute;
+    right: 26px; bottom: 10px;
+    font-size: 8px; color: rgba(255,255,255,0.65); font-weight: 600; letter-spacing: 0.02em;
+  }
+
+  .th-reading {
+    position: absolute;
+    font-size: 8px; color: #FFFFFF; font-weight: 700;
+    background: rgba(0,0,0,0.55); padding: 2px 4px; border-radius: 3px; letter-spacing: 0.03em;
+  }
+
+  .th-annotation {
+    position: absolute;
+    border: 2px solid #D97706;
+    border-radius: 50%;
+    pointer-events: none;
+    box-shadow: 0 0 0 1px rgba(217,119,6,0.22);
+  }
+
+  .th-ann-badge {
+    position: absolute;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #D97706;
+    color: #FFFFFF;
+    font-size: 8px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    top: -7px; right: -7px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+  }
+
+  .thermal-caption {
+    margin-top: 10px;
+    font-size: 11.5px;
+    color: var(--muted-fg);
+  }
+
+  .export-btn {
+    margin-top: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1.5px solid var(--primary);
+    border-radius: var(--radius-md);
+    background: #FFFFFF;
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+  }
+
+  .export-btn svg { opacity: 0.75; }
+
+  /* ── Right column: report details ── */
+  .details-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 16px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .field-group {
+    margin-bottom: 14px;
+  }
+
+  .field-group:last-child {
+    margin-bottom: 0;
+  }
+
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted-fg);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 3px;
+  }
+
+  .field-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--foreground);
+    line-height: 1.4;
+  }
+
+  .field-value.treatment-text {
+    font-size: 13px;
+    font-weight: 400;
+    color: #333;
+    line-height: 1.5;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: var(--radius-full);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  .badge-sick {
+    background: #D97706;
+    color: #1A0E00;
+  }
+
+  .badge-recovered {
+    background: #DCFCE7;
+    color: #14532D;
+  }
+
+  .badge-severity {
+    background: var(--primary);
+    color: #FFFFFF;
+  }
+
+  .details-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 14px 0;
+  }
+
+  .followup-link {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--primary);
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .followup-link:hover {
+    text-decoration: underline;
+  }
+
+  /* ── Recovery report section ── */
+  .recovery-section {
+    margin-top: 36px;
+  }
+
+  .recovery-section-header {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted-fg);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .recovery-section-header::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .recovery-frame {
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.13), 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .recovery-chrome {
+    background: #ECECEC;
+    border-bottom: 1px solid #D0CFCC;
+    padding: 9px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .recovery-shell {
+    display: flex;
+    height: 590px;
+    background: var(--background);
+  }
+
+  .recovery-shell .main-content {
+    overflow-y: auto;
+  }
+
+  /* Compact meta for recovery variant */
+  .meta-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .meta-grid .field-group {
+    margin-bottom: 12px;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     COMPARISON: Farmer vs Vet side-by-side
+════════════════════════════════════════════════════════════════════ -->
+<div class="comparison-row">
+
+  <!-- ── LEFT: FARMER VARIANT ── -->
+  <div style="flex:1;min-width:0;">
+    <div class="variant-label">Farmer view</div>
+    <div class="browser-frame">
+      <div class="browser-chrome">
+        <div class="browser-dots">
+          <div class="browser-dot dot-red"></div>
+          <div class="browser-dot dot-yellow"></div>
+          <div class="browser-dot dot-green"></div>
+        </div>
+        <div class="browser-url">farmtracking.app/cattle/bella/reports/2026-06-12</div>
+      </div>
+
+      <div class="app-shell">
+        <!-- Farmer sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-logo">
+            <div class="sidebar-logo-text">Farm Tracking</div>
+            <div class="sidebar-logo-sub">Cattle Health</div>
+          </div>
+
+          <nav class="sidebar-nav">
+            <!-- Dashboard -->
+            <a class="nav-item" href="#">
+              <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+                <rect x="2" y="2" width="6" height="6" rx="1.5"/><rect x="10" y="2" width="6" height="6" rx="1.5"/>
+                <rect x="2" y="10" width="6" height="6" rx="1.5"/><rect x="10" y="10" width="6" height="6" rx="1.5"/>
+              </svg>
+              Dashboard
+            </a>
+            <!-- Cattle — implied context (parent of this page) -->
+            <a class="nav-item active" href="#">
+              <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+                <ellipse cx="9" cy="11" rx="6" ry="4.5"/><circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/>
+              </svg>
+              Cattle
+            </a>
+            <!-- Notifications with amber dot -->
+            <a class="nav-item" href="#">
+              <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M9 2a5 5 0 0 1 5 5v3l1.5 2.5H2.5L4 10V7a5 5 0 0 1 5-5Z"/><path d="M7.5 14.5a1.5 1.5 0 0 0 3 0"/>
+              </svg>
+              Notifications
+              <span class="nav-badge">3</span>
+            </a>
+          </nav>
+
+          <div class="sidebar-user">
+            <div class="user-avatar">MY</div>
+            <div>
+              <div class="user-name">Mehmet Yılmaz</div>
+              <div class="user-org">Mehmet's Farm</div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main content: farmer reading report -->
+        <main class="main-content">
+          <a class="back-link" href="#">&#8592; Bella's Profile</a>
+
+          <div class="page-title">Health Report</div>
+          <div class="page-subtitle">
+            <span style="font-weight:600;color:#111;">Bella</span>
+            <span style="color:var(--muted-fg);">#TAG-0042</span>
+            <span class="subtitle-sep">·</span>
+            <span>Mehmet's Farm</span>
+            <span class="subtitle-sep">·</span>
+            <span>Submitted June 12, 2026 at 14:23</span>
+            <span class="subtitle-sep">·</span>
+            <span>Dr. Ayşe</span>
+          </div>
+
+          <div class="report-grid">
+            <!-- LEFT: Thermal image -->
+            <div class="thermal-card">
+              <div class="thermal-card-inner">
+                <div class="section-label">Thermal Scan</div>
+
+                <div class="thermal-wrap">
+                  <div class="th-base"></div>
+                  <div class="th-body"></div>
+                  <div class="th-hotspot-1"></div>
+                  <div class="th-hotspot-2"></div>
+                  <div class="th-cool-1"></div>
+                  <div class="th-cool-2"></div>
+                  <div class="th-cool-3"></div>
+                  <div class="th-cool-4"></div>
+                  <div class="th-head"></div>
+
+                  <div class="th-reading" style="left:21%;top:19%;">39.4°C</div>
+                  <div class="th-reading" style="left:49%;top:31%;">38.1°C</div>
+
+                  <div class="th-scale"></div>
+                  <div class="th-scale-hi">42°</div>
+                  <div class="th-scale-lo">30°</div>
+
+                  <!-- Annotation 1 -->
+                  <div class="th-annotation" style="left:15%;top:13%;width:37%;height:46%;">
+                    <div class="th-ann-badge">1</div>
+                  </div>
+                  <!-- Annotation 2 -->
+                  <div class="th-annotation" style="left:46%;top:26%;width:22%;height:30%;">
+                    <div class="th-ann-badge">2</div>
+                  </div>
+                </div>
+
+                <div class="thermal-caption">Annotated by Dr. Ayşe · June 12, 2026</div>
+
+                <button class="export-btn">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7">
+                    <path d="M7 1v8M4.5 6.5 7 9l2.5-2.5"/><rect x="2" y="10" width="10" height="2.5" rx="1"/>
+                  </svg>
+                  Export Image
+                </button>
+              </div>
+            </div>
+
+            <!-- RIGHT: Diagnosis details -->
+            <div class="details-card">
+              <div class="section-label">Diagnosis</div>
+
+              <div class="field-group">
+                <div class="field-label">Sickness Name</div>
+                <div class="field-value">Mastitis</div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Severity</div>
+                <div><span class="badge badge-severity">Moderate</span></div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Recovery Status</div>
+                <div><span class="badge badge-sick">Sick</span></div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Recommended Treatment</div>
+                <div class="field-value treatment-text">Antibiotic course — Penicillin G, 5-day course. Monitor milk output.</div>
+              </div>
+
+              <div class="details-divider"></div>
+
+              <div class="field-group">
+                <div class="field-label">Submitted by</div>
+                <div class="field-value">Dr. Ayşe</div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Submitted on</div>
+                <div class="field-value">June 12, 2026 at 14:23</div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Cattle</div>
+                <div class="field-value">Bella · <span style="color:var(--muted-fg);font-weight:400;">#TAG-0042</span></div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Farm</div>
+                <div class="field-value">Mehmet's Farm</div>
+              </div>
+
+              <!-- Farmer does NOT see "Create follow-up report" -->
+            </div>
+          </div>
+        </main>
+      </div><!-- /.app-shell -->
+    </div><!-- /.browser-frame -->
+  </div><!-- /.farmer-col -->
+
+
+  <!-- ── RIGHT: VET VARIANT ── -->
+  <div style="flex:1;min-width:0;">
+    <div class="variant-label">Vet view</div>
+    <div class="browser-frame">
+      <div class="browser-chrome">
+        <div class="browser-dots">
+          <div class="browser-dot dot-red"></div>
+          <div class="browser-dot dot-yellow"></div>
+          <div class="browser-dot dot-green"></div>
+        </div>
+        <div class="browser-url">farmtracking.app/vet/scan-queue/reports/2026-06-12</div>
+      </div>
+
+      <div class="app-shell">
+        <!-- Vet sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-logo">
+            <div class="sidebar-logo-text">Farm Tracking</div>
+            <div class="sidebar-logo-sub">Cattle Health</div>
+          </div>
+
+          <!-- Farm switcher -->
+          <div style="padding:10px 10px 6px;">
+            <div style="font-size:10px;font-weight:600;color:var(--muted-fg);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:4px;">Active farm</div>
+            <div style="background:var(--muted);border-radius:var(--radius-md);padding:7px 10px;font-size:12.5px;color:var(--foreground);font-weight:500;display:flex;align-items:center;gap:6px;">
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="#1E3A5F" stroke-width="1.6" style="flex-shrink:0;opacity:0.7">
+                <path d="M2 11V7l5-5 5 5v4"/><rect x="5" y="8" width="4" height="3"/>
+              </svg>
+              Mehmet's Farm
+              <svg width="11" height="11" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" style="margin-left:auto;opacity:0.38;">
+                <path d="m3 5 3 3 3-3"/>
+              </svg>
+            </div>
+          </div>
+
+          <nav class="sidebar-nav">
+            <!-- Farms -->
+            <a class="nav-item" href="#">
+              <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+                <path d="M3 14V8l6-6 6 6v6"/><rect x="6.5" y="10" width="5" height="4"/>
+              </svg>
+              Farms
+            </a>
+            <!-- Scan Queue — ACTIVE, came from here -->
+            <a class="nav-item active" href="#">
+              <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+                <circle cx="9" cy="9" r="7"/><path d="M9 5v4l2.5 2.5"/>
+              </svg>
+              Scan Queue
+            </a>
+            <!-- Reports -->
+            <a class="nav-item" href="#">
+              <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+                <rect x="3" y="2" width="12" height="14" rx="2"/><path d="M6 6h6M6 9h6M6 12h4"/>
+              </svg>
+              Reports
+            </a>
+          </nav>
+
+          <div class="sidebar-user">
+            <div class="user-avatar">DA</div>
+            <div>
+              <div class="user-name">Dr. Ayşe</div>
+              <div class="user-org">Veterinarian</div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main content: vet reading report they submitted -->
+        <main class="main-content">
+          <a class="back-link" href="#">&#8592; Scan Queue</a>
+
+          <div class="page-title">Health Report</div>
+          <div class="page-subtitle">
+            <span style="font-weight:600;color:#111;">Bella</span>
+            <span style="color:var(--muted-fg);">#TAG-0042</span>
+            <span class="subtitle-sep">·</span>
+            <span>Mehmet's Farm</span>
+            <span class="subtitle-sep">·</span>
+            <span>Submitted June 12, 2026 at 14:23</span>
+            <span class="subtitle-sep">·</span>
+            <span>Dr. Ayşe</span>
+          </div>
+
+          <div class="report-grid">
+            <!-- LEFT: Thermal image -->
+            <div class="thermal-card">
+              <div class="thermal-card-inner">
+                <div class="section-label">Thermal Scan</div>
+
+                <div class="thermal-wrap">
+                  <div class="th-base"></div>
+                  <div class="th-body"></div>
+                  <div class="th-hotspot-1"></div>
+                  <div class="th-hotspot-2"></div>
+                  <div class="th-cool-1"></div>
+                  <div class="th-cool-2"></div>
+                  <div class="th-cool-3"></div>
+                  <div class="th-cool-4"></div>
+                  <div class="th-head"></div>
+
+                  <div class="th-reading" style="left:21%;top:19%;">39.4°C</div>
+                  <div class="th-reading" style="left:49%;top:31%;">38.1°C</div>
+
+                  <div class="th-scale"></div>
+                  <div class="th-scale-hi">42°</div>
+                  <div class="th-scale-lo">30°</div>
+
+                  <div class="th-annotation" style="left:15%;top:13%;width:37%;height:46%;">
+                    <div class="th-ann-badge">1</div>
+                  </div>
+                  <div class="th-annotation" style="left:46%;top:26%;width:22%;height:30%;">
+                    <div class="th-ann-badge">2</div>
+                  </div>
+                </div>
+
+                <div class="thermal-caption">Annotated by Dr. Ayşe · June 12, 2026</div>
+
+                <button class="export-btn">
+                  <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7">
+                    <path d="M7 1v8M4.5 6.5 7 9l2.5-2.5"/><rect x="2" y="10" width="10" height="2.5" rx="1"/>
+                  </svg>
+                  Export Image
+                </button>
+              </div>
+            </div>
+
+            <!-- RIGHT: Diagnosis details (vet variant) -->
+            <div class="details-card">
+              <div class="section-label">Diagnosis</div>
+
+              <div class="field-group">
+                <div class="field-label">Sickness Name</div>
+                <div class="field-value">Mastitis</div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Severity</div>
+                <div><span class="badge badge-severity">Moderate</span></div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Recovery Status</div>
+                <div><span class="badge badge-sick">Sick</span></div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Recommended Treatment</div>
+                <div class="field-value treatment-text">Antibiotic course — Penicillin G, 5-day course. Monitor milk output.</div>
+              </div>
+
+              <div class="details-divider"></div>
+
+              <div class="field-group">
+                <div class="field-label">Submitted by</div>
+                <div class="field-value">Dr. Ayşe</div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Submitted on</div>
+                <div class="field-value">June 12, 2026 at 14:23</div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Cattle</div>
+                <div class="field-value">Bella · <span style="color:var(--muted-fg);font-weight:400;">#TAG-0042</span></div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Farm</div>
+                <div class="field-value">Mehmet's Farm</div>
+              </div>
+
+              <!-- VET ONLY: follow-up link -->
+              <a class="followup-link" href="#">
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7">
+                  <circle cx="7" cy="7" r="6"/><path d="M7 4.5v2.5l1.5 1.5"/>
+                </svg>
+                Create follow-up report
+              </a>
+            </div>
+          </div>
+        </main>
+      </div><!-- /.app-shell -->
+    </div><!-- /.browser-frame -->
+  </div><!-- /.vet-col -->
+
+</div><!-- /.comparison-row -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     RECOVERY REPORT — same cattle, later date
+════════════════════════════════════════════════════════════════════ -->
+<div class="recovery-section">
+  <div class="recovery-section-header">Recovery Report — same cattle, later date</div>
+
+  <div class="recovery-frame">
+    <div class="recovery-chrome">
+      <div class="browser-dots">
+        <div class="browser-dot dot-red"></div>
+        <div class="browser-dot dot-yellow"></div>
+        <div class="browser-dot dot-green"></div>
+      </div>
+      <div class="browser-url">farmtracking.app/cattle/bella/reports/2026-06-20</div>
+    </div>
+
+    <div class="recovery-shell" style="background:var(--background);">
+      <!-- Sidebar (reusing farmer sidebar for this single-col view) -->
+      <aside class="sidebar">
+        <div class="sidebar-logo">
+          <div class="sidebar-logo-text">Farm Tracking</div>
+          <div class="sidebar-logo-sub">Cattle Health</div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+              <rect x="2" y="2" width="6" height="6" rx="1.5"/><rect x="10" y="2" width="6" height="6" rx="1.5"/>
+              <rect x="2" y="10" width="6" height="6" rx="1.5"/><rect x="10" y="10" width="6" height="6" rx="1.5"/>
+            </svg>
+            Dashboard
+          </a>
+          <a class="nav-item active" href="#">
+            <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+              <ellipse cx="9" cy="11" rx="6" ry="4.5"/><circle cx="6" cy="6" r="2"/><circle cx="12" cy="6" r="2"/>
+            </svg>
+            Cattle
+          </a>
+          <a class="nav-item" href="#">
+            <svg class="nav-icon" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M9 2a5 5 0 0 1 5 5v3l1.5 2.5H2.5L4 10V7a5 5 0 0 1 5-5Z"/><path d="M7.5 14.5a1.5 1.5 0 0 0 3 0"/>
+            </svg>
+            Notifications
+          </a>
+        </nav>
+
+        <div class="sidebar-user">
+          <div class="user-avatar">MY</div>
+          <div>
+            <div class="user-name">Mehmet Yılmaz</div>
+            <div class="user-org">Mehmet's Farm</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Recovery report main content -->
+      <main class="main-content" style="overflow-y:auto;">
+        <a class="back-link" href="#">&#8592; Bella's Profile</a>
+
+        <div class="page-title">Health Report</div>
+        <div class="page-subtitle">
+          <span style="font-weight:600;color:#111;">Bella</span>
+          <span style="color:var(--muted-fg);">#TAG-0042</span>
+          <span class="subtitle-sep">·</span>
+          <span>Mehmet's Farm</span>
+          <span class="subtitle-sep">·</span>
+          <span>Submitted June 20, 2026 at 09:41</span>
+          <span class="subtitle-sep">·</span>
+          <span>Dr. Ayşe</span>
+        </div>
+
+        <div class="report-grid">
+          <!-- LEFT: Thermal image — no annotations (wellness check) -->
+          <div class="thermal-card">
+            <div class="thermal-card-inner">
+              <div class="section-label">Thermal Scan</div>
+
+              <div class="thermal-wrap">
+                <div class="th-base"></div>
+                <div class="th-body"></div>
+                <!-- Hotspots still present but slightly cooler — same visual -->
+                <div class="th-hotspot-1" style="opacity:0.4;"></div>
+                <div class="th-hotspot-2" style="opacity:0.35;"></div>
+                <div class="th-cool-1"></div>
+                <div class="th-cool-2"></div>
+                <div class="th-cool-3"></div>
+                <div class="th-cool-4"></div>
+                <div class="th-head"></div>
+
+                <div class="th-reading" style="left:21%;top:19%;">38.7°C</div>
+                <div class="th-reading" style="left:49%;top:31%;">38.3°C</div>
+
+                <div class="th-scale"></div>
+                <div class="th-scale-hi">42°</div>
+                <div class="th-scale-lo">30°</div>
+
+                <!-- No annotation circles — vet did not annotate this wellness check -->
+              </div>
+
+              <div class="thermal-caption">No annotations · June 20, 2026 · Wellness check</div>
+
+              <button class="export-btn">
+                <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.7">
+                  <path d="M7 1v8M4.5 6.5 7 9l2.5-2.5"/><rect x="2" y="10" width="10" height="2.5" rx="1"/>
+                </svg>
+                Export Image
+              </button>
+            </div>
+          </div>
+
+          <!-- RIGHT: Recovery diagnosis -->
+          <div class="details-card">
+            <div class="section-label">Diagnosis</div>
+
+            <div class="field-group">
+              <div class="field-label">Sickness Name</div>
+              <div class="field-value">Mastitis (Resolved)</div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">Severity</div>
+              <div><span class="badge" style="background:var(--muted);color:var(--muted-fg);">—</span></div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">Recovery Status</div>
+              <div><span class="badge badge-recovered">Recovered</span></div>
+            </div>
+
+            <div class="field-group">
+              <div class="field-label">Recommended Treatment</div>
+              <div class="field-value treatment-text">Course completed. No further treatment required.</div>
+            </div>
+
+            <div class="details-divider"></div>
+
+            <div class="meta-grid">
+              <div class="field-group">
+                <div class="field-label">Submitted by</div>
+                <div class="field-value">Dr. Ayşe</div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Submitted on</div>
+                <div class="field-value">June 20, 2026 at 09:41</div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Cattle</div>
+                <div class="field-value">Bella · <span style="color:var(--muted-fg);font-weight:400;">#TAG-0042</span></div>
+              </div>
+
+              <div class="field-group">
+                <div class="field-label">Farm</div>
+                <div class="field-value">Mehmet's Farm</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div><!-- /.recovery-shell -->
+  </div><!-- /.recovery-frame -->
+</div><!-- /.recovery-section -->
+
+</body>
+</html>

@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farm Tracking — Vet Scan Queue</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── Design tokens ── */
+    :root {
+      --primary:        #1E3A5F;
+      --primary-fg:     #FFFFFF;
+      --accent:         #D97706;
+      --bg:             #FAFAF8;
+      --card:           #FFFFFF;
+      --muted:          #F1F0EE;
+      --muted-fg:       #6B6B6B;
+      --border:         #E2E1DF;
+      --radius-sm:      4px;
+      --radius-md:      8px;
+      --radius-lg:      12px;
+      --radius-full:    9999px;
+      --font:           system-ui, -apple-system, sans-serif;
+    }
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: #1A1A1A;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 32px 24px 64px;
+      gap: 48px;
+    }
+
+    /* ═══════════════════════════════════════════
+       SECTION LABELS
+    ═══════════════════════════════════════════ */
+    .state-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted-fg);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 3px 10px;
+      margin-bottom: 12px;
+      display: inline-block;
+      background: #fff;
+    }
+
+    /* ═══════════════════════════════════════════
+       BROWSER CHROME
+    ═══════════════════════════════════════════ */
+    .browser-chrome {
+      width: 1280px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+    }
+
+    .browser-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #EFEFEF;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .browser-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+    }
+    .dot-red   { background: #FF5F57; }
+    .dot-yel   { background: #FFBD2E; }
+    .dot-grn   { background: #28C840; }
+    .browser-url {
+      margin-left: 12px;
+      flex: 1;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px 12px;
+      font-size: 12px;
+      color: var(--muted-fg);
+      max-width: 520px;
+    }
+
+    /* ═══════════════════════════════════════════
+       APP SHELL
+    ═══════════════════════════════════════════ */
+    .app-shell {
+      display: flex;
+      height: 820px;
+      background: var(--bg);
+    }
+
+    /* ─── Sidebar ─── */
+    .sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: var(--primary);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .sidebar-top {
+      padding: 20px 16px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .wordmark {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--primary-fg);
+      letter-spacing: 0.01em;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .wordmark-icon {
+      width: 26px; height: 26px;
+      background: rgba(255,255,255,0.15);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px;
+    }
+
+    .farm-switcher {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255,255,255,0.10);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: var(--radius-md);
+      padding: 7px 11px;
+      font-size: 12.5px;
+      color: rgba(255,255,255,0.88);
+      cursor: pointer;
+    }
+    .farm-switcher .chevron {
+      font-size: 10px;
+      opacity: 0.65;
+      margin-left: 4px;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 12px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius-md);
+      font-size: 13.5px;
+      color: rgba(255,255,255,0.65);
+      cursor: pointer;
+      text-decoration: none;
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.9);
+    }
+    .nav-item.active {
+      background: rgba(255,255,255,0.13);
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+    .nav-icon {
+      font-size: 15px;
+      opacity: 0.85;
+      width: 18px;
+      text-align: center;
+    }
+
+    .sidebar-footer {
+      padding: 12px 14px 16px;
+      border-top: 1px solid rgba(255,255,255,0.08);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #4FA3D1 0%, #1E3A5F 100%);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+    .avatar-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .avatar-name {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.92);
+      line-height: 1.3;
+    }
+    .avatar-role {
+      font-size: 11px;
+      color: rgba(255,255,255,0.45);
+    }
+
+    /* ─── Main content ─── */
+    .main-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 28px 32px 40px;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+
+    /* Page header */
+    .page-header {
+      margin-bottom: 20px;
+    }
+    .page-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: #1A1A1A;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+    .page-subtitle {
+      font-size: 13.5px;
+      color: var(--muted-fg);
+    }
+
+    /* Filter tabs */
+    .filter-tabs {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+    .filter-tab {
+      font-size: 13.5px;
+      padding: 8px 16px;
+      cursor: pointer;
+      color: var(--muted-fg);
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      white-space: nowrap;
+    }
+    .filter-tab:hover {
+      color: #1A1A1A;
+    }
+    .filter-tab.active {
+      color: var(--primary);
+      font-weight: 600;
+      border-bottom-color: var(--primary);
+    }
+
+    /* Card list */
+    .card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* Scan card */
+    .scan-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: background 0.12s ease;
+    }
+    .scan-card:hover {
+      background: #F5F4F2;
+    }
+
+    /* Thermal thumbnail */
+    .thermal-thumb {
+      width: 60px;
+      height: 60px;
+      border-radius: var(--radius-md);
+      flex-shrink: 0;
+      position: relative;
+      overflow: hidden;
+    }
+    .thermal-thumb::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: #0D0D1A;
+    }
+    /* Heat gradient overlay — simulates thermal image */
+    .thermal-thumb::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 38% 28% at 52% 42%, #FFFFFF 0%, #FFE800 18%, #FF6600 38%, transparent 62%),
+        radial-gradient(ellipse 55% 45% at 50% 50%, #CC2200 0%, #881100 35%, #440022 60%, transparent 80%),
+        radial-gradient(ellipse 80% 70% at 48% 52%, #220033 0%, #0D0D1A 80%);
+      opacity: 0.92;
+    }
+
+    /* Warm variation for reviewed cards */
+    .thermal-thumb.warm::after {
+      background:
+        radial-gradient(ellipse 35% 25% at 50% 45%, #FFE000 0%, #FF8800 28%, #CC3300 50%, transparent 68%),
+        radial-gradient(ellipse 60% 50% at 50% 50%, #881100 0%, #440033 40%, #1A0022 65%, transparent 80%),
+        radial-gradient(ellipse 80% 70% at 50% 52%, #0D0020 0%, #0D0D1A 80%);
+    }
+    .thermal-thumb.cool::after {
+      background:
+        radial-gradient(ellipse 32% 24% at 55% 40%, #FFEE44 0%, #FF4400 30%, #CC1100 50%, transparent 65%),
+        radial-gradient(ellipse 55% 42% at 50% 48%, #770011 0%, #330033 42%, #110022 65%, transparent 82%),
+        radial-gradient(ellipse 80% 70% at 48% 50%, #0A0018 0%, #0D0D1A 80%);
+    }
+
+    /* Card body */
+    .card-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .card-title {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: #1A1A1A;
+      margin-bottom: 2px;
+    }
+    .card-sub {
+      font-size: 12.5px;
+      color: var(--muted-fg);
+      margin-bottom: 5px;
+    }
+    .card-meta {
+      font-size: 11.5px;
+      color: #9B9B9B;
+    }
+
+    /* Status chip */
+    .status-chip {
+      font-size: 12px;
+      font-weight: 500;
+      padding: 3px 10px;
+      border-radius: var(--radius-full);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .chip-pending {
+      background: rgba(217, 119, 6, 0.12);
+      color: #B45309;
+      border: 1px solid rgba(217, 119, 6, 0.45);
+    }
+    .chip-reviewed {
+      background: #DCFCE7;
+      color: #14532D;
+      border: 1px solid rgba(20, 83, 45, 0.35);
+    }
+
+    /* Review CTA */
+    .review-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary);
+      text-decoration: none;
+      white-space: nowrap;
+      flex-shrink: 0;
+      padding: 6px 4px;
+      margin-left: 4px;
+    }
+    .review-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Card right cluster */
+    .card-right {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════════
+       EMPTY STATE SECTION (below, same width)
+    ═══════════════════════════════════════════ */
+    .empty-state-frame {
+      width: 1280px;
+    }
+
+    .empty-app-shell {
+      display: flex;
+      height: 380px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.07);
+    }
+
+    /* Sidebar identical but shorter */
+    .empty-sidebar {
+      width: 220px;
+      min-width: 220px;
+      background: var(--primary);
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      flex-shrink: 0;
+    }
+
+    .empty-main {
+      flex: 1;
+      padding: 28px 32px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Empty state body */
+    .empty-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .empty-primary {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--muted-fg);
+    }
+    .empty-secondary {
+      font-size: 13px;
+      color: #ADADAD;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       STATE 1 — POPULATED SCAN QUEUE
+  ═══════════════════════════════════════════ -->
+  <div>
+    <div class="state-label">State 1 — Populated queue (6 scans: 4 pending, 2 reviewed)</div>
+
+    <div class="browser-chrome">
+
+      <!-- Browser chrome bar -->
+      <div class="browser-bar">
+        <div class="browser-dot dot-red"></div>
+        <div class="browser-dot dot-yel"></div>
+        <div class="browser-dot dot-grn"></div>
+        <div class="browser-url">farmtracking.internal/scan-queue</div>
+      </div>
+
+      <!-- App shell -->
+      <div class="app-shell">
+
+        <!-- Sidebar -->
+        <aside class="sidebar">
+          <div class="sidebar-top">
+            <div class="wordmark">
+              <div class="wordmark-icon">🐄</div>
+              Farm Tracking
+            </div>
+            <div class="farm-switcher">
+              All Farms
+              <span class="chevron">▾</span>
+            </div>
+          </div>
+
+          <nav class="sidebar-nav">
+            <a class="nav-item" href="#">
+              <span class="nav-icon">🏡</span>
+              Farms
+            </a>
+            <a class="nav-item active" href="#">
+              <span class="nav-icon">🩺</span>
+              Scan Queue
+            </a>
+            <a class="nav-item" href="#">
+              <span class="nav-icon">📊</span>
+              Reports
+            </a>
+          </nav>
+
+          <div class="sidebar-footer">
+            <div class="avatar">DA</div>
+            <div class="avatar-info">
+              <span class="avatar-name">Dr. Ayşe</span>
+              <span class="avatar-role">Veterinarian</span>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-content">
+
+          <!-- Page header -->
+          <div class="page-header">
+            <h1 class="page-title">Scan Queue</h1>
+            <p class="page-subtitle">6 pending &middot; 2 reviewed today</p>
+          </div>
+
+          <!-- Filter tabs -->
+          <div class="filter-tabs">
+            <div class="filter-tab active">All (6)</div>
+            <div class="filter-tab">Pending Review (4)</div>
+            <div class="filter-tab">Reviewed (2)</div>
+          </div>
+
+          <!-- Card list -->
+          <div class="card-list">
+
+            <!-- Card 1 — Pending -->
+            <div class="scan-card">
+              <div class="thermal-thumb"></div>
+              <div class="card-body">
+                <div class="card-title">Bella &mdash; #TAG-0042</div>
+                <div class="card-sub">Mehmet's Farm &middot; Holstein &middot; Born Mar 2022</div>
+                <div class="card-meta">Submitted 2h ago &middot; IoT Device #3</div>
+              </div>
+              <div class="card-right">
+                <span class="status-chip chip-pending">Pending Review</span>
+                <a class="review-link" href="#">Review &rarr;</a>
+              </div>
+            </div>
+
+            <!-- Card 2 — Pending -->
+            <div class="scan-card">
+              <div class="thermal-thumb cool"></div>
+              <div class="card-body">
+                <div class="card-title">Bruno &mdash; #TAG-0019</div>
+                <div class="card-sub">Mehmet's Farm &middot; Simmental &middot; Born Jan 2021</div>
+                <div class="card-meta">Submitted 5h ago &middot; Mobile App</div>
+              </div>
+              <div class="card-right">
+                <span class="status-chip chip-pending">Pending Review</span>
+                <a class="review-link" href="#">Review &rarr;</a>
+              </div>
+            </div>
+
+            <!-- Card 3 — Pending -->
+            <div class="scan-card">
+              <div class="thermal-thumb"></div>
+              <div class="card-body">
+                <div class="card-title">Daisy &mdash; #TAG-0031</div>
+                <div class="card-sub">Çelik Farm &middot; Angus &middot; Born Sep 2022</div>
+                <div class="card-meta">Submitted 8h ago &middot; IoT Device #1</div>
+              </div>
+              <div class="card-right">
+                <span class="status-chip chip-pending">Pending Review</span>
+                <a class="review-link" href="#">Review &rarr;</a>
+              </div>
+            </div>
+
+            <!-- Card 4 — Pending -->
+            <div class="scan-card">
+              <div class="thermal-thumb cool"></div>
+              <div class="card-body">
+                <div class="card-title">Max &mdash; #TAG-0007</div>
+                <div class="card-sub">Çelik Farm &middot; Holstein &middot; Born Jun 2020</div>
+                <div class="card-meta">Submitted Yesterday &middot; IoT Device #2</div>
+              </div>
+              <div class="card-right">
+                <span class="status-chip chip-pending">Pending Review</span>
+                <a class="review-link" href="#">Review &rarr;</a>
+              </div>
+            </div>
+
+            <!-- Card 5 — Reviewed -->
+            <div class="scan-card">
+              <div class="thermal-thumb warm"></div>
+              <div class="card-body">
+                <div class="card-title">Luna &mdash; #TAG-0055</div>
+                <div class="card-sub">Mehmet's Farm &middot; Jersey &middot; Born Nov 2023</div>
+                <div class="card-meta">Reviewed today at 09:14 &middot; Dr. Ayşe</div>
+              </div>
+              <div class="card-right">
+                <span class="status-chip chip-reviewed">Reviewed</span>
+              </div>
+            </div>
+
+            <!-- Card 6 — Reviewed -->
+            <div class="scan-card">
+              <div class="thermal-thumb warm"></div>
+              <div class="card-body">
+                <div class="card-title">Kara &mdash; #TAG-0028</div>
+                <div class="card-sub">Çelik Farm &middot; Simmental &middot; Born Aug 2021</div>
+                <div class="card-meta">Reviewed today at 08:30 &middot; Dr. Ayşe</div>
+              </div>
+              <div class="card-right">
+                <span class="status-chip chip-reviewed">Reviewed</span>
+              </div>
+            </div>
+
+          </div><!-- /.card-list -->
+        </main>
+
+      </div><!-- /.app-shell -->
+    </div><!-- /.browser-chrome -->
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       STATE 2 — EMPTY QUEUE
+  ═══════════════════════════════════════════ -->
+  <div class="empty-state-frame">
+    <div class="state-label">State 2 — Empty queue (no pending scans)</div>
+
+    <div class="empty-app-shell">
+
+      <!-- Mini sidebar (same structure, shorter height) -->
+      <aside class="empty-sidebar sidebar">
+        <div class="sidebar-top">
+          <div class="wordmark">
+            <div class="wordmark-icon">🐄</div>
+            Farm Tracking
+          </div>
+          <div class="farm-switcher">
+            All Farms
+            <span class="chevron">▾</span>
+          </div>
+        </div>
+        <nav class="sidebar-nav">
+          <a class="nav-item" href="#">
+            <span class="nav-icon">🏡</span>
+            Farms
+          </a>
+          <a class="nav-item active" href="#">
+            <span class="nav-icon">🩺</span>
+            Scan Queue
+          </a>
+          <a class="nav-item" href="#">
+            <span class="nav-icon">📊</span>
+            Reports
+          </a>
+        </nav>
+        <div class="sidebar-footer">
+          <div class="avatar">DA</div>
+          <div class="avatar-info">
+            <span class="avatar-name">Dr. Ayşe</span>
+            <span class="avatar-role">Veterinarian</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Empty main -->
+      <main class="empty-main">
+        <div class="page-header">
+          <h1 class="page-title">Scan Queue</h1>
+          <p class="page-subtitle">0 pending &middot; 2 reviewed today</p>
+        </div>
+
+        <div class="filter-tabs">
+          <div class="filter-tab active">All (2)</div>
+          <div class="filter-tab">Pending Review (0)</div>
+          <div class="filter-tab">Reviewed (2)</div>
+        </div>
+
+        <div class="empty-body">
+          <p class="empty-primary">No scans pending review.</p>
+          <p class="empty-secondary">Reviewed scans appear here once submitted.</p>
+        </div>
+      </main>
+
+    </div><!-- /.empty-app-shell -->
+  </div>
+
+</body>
+</html>

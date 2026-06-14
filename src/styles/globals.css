@@ -1,0 +1,104 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Dark mode suppressed by design — see DESIGN.md "Don'ts" and EXPERIENCE.md "Foundation" */
+
+@theme {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif,
+    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  /* ─── Farm Tracking brand tokens ─────────────────────────────────────────── */
+  /* Source hex values: DESIGN.md — do not change without updating DESIGN.md   */
+  --background: oklch(0.9844 0.0023 82.9);         /* #FAFAF8 warm off-white   */
+  --foreground: oklch(0.2254 0.0348 247.5);         /* dark navy foreground     */
+  --card: oklch(1 0 0);                              /* #FFFFFF                  */
+  --card-foreground: oklch(0.2254 0.0348 247.5);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.2254 0.0348 247.5);
+  --primary: oklch(0.3105 0.0752 240.0);             /* #1E3A5F navy             */
+  --primary-foreground: oklch(1 0 0);                /* #FFFFFF                  */
+  --secondary: oklch(0.9494 0.0041 82.9);            /* #F1F0EE muted            */
+  --secondary-foreground: oklch(0.3105 0.0752 240.0);
+  --muted: oklch(0.9494 0.0041 82.9);               /* #F1F0EE                  */
+  --muted-foreground: oklch(0.5041 0 0);             /* #6B6B6B                  */
+  --accent: oklch(0.6197 0.1516 54.6);               /* #D97706 amber            */
+  --accent-foreground: oklch(0.0897 0.0294 56.5);   /* #1A0E00                  */
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.8942 0.0033 82.9);              /* #E2E1DF                  */
+  --input: oklch(0.8942 0.0033 82.9);
+  --ring: oklch(0.3105 0.0752 240.0);               /* #1E3A5F navy focus rings  */
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.2254 0.0348 247.5);
+  --sidebar-primary: oklch(0.3105 0.0752 240.0);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.9494 0.0041 82.9);
+  --sidebar-accent-foreground: oklch(0.3105 0.0752 240.0);
+  --sidebar-border: oklch(0.8942 0.0033 82.9);
+  --sidebar-ring: oklch(0.3105 0.0752 240.0);
+}
+
+/* No .dark block — dark mode explicitly excluded (DESIGN.md "Don'ts") */
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
